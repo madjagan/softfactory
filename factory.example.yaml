@@ -1,0 +1,89 @@
+# factory.yaml — the project manifest every factory skill, agent, hook and tool reads.
+# Copy to the repo root as factory.yaml (or let /setup-project write it) and fill every value.
+# Keep it honest: a command listed here is a command the skills WILL run.
+
+project:
+  name: Acme Ledger                       # human name, used in page titles and the tracker brand
+  slug: acmeledger                        # url-safe, used for container names and deploy paths
+  owner: Acme Product Hub                 # who runs the factory for this product
+  summary: >
+    One paragraph. Who the product is for, what it does, what it must never do.
+    /setup-project expands this into the PRD skeleton and the persona list.
+  version_file: package.json              # where the running version is read from (optional)
+
+stack:
+  frontend: Vite + React                  # free text; the skills use it to pick test layers
+  backend: FastAPI + PostgreSQL
+  e2e: Playwright (API level)
+  design_system: src/tokens.js            # the file that is "law" for UI, or blank
+
+docs:                                     # all relative to the repo root; these are the defaults
+  prd: docs/PRODUCT_REQUIREMENTS.md
+  plan: docs/IMPLEMENTATION_PLAN.md
+  issues_log: docs/issues_log.md
+  issues_classified: docs/issues_classified.json
+  issues_dashboard: docs/issues_dashboard.html
+  feature_list: docs/FEATURE_LIST.md
+  user_guides: docs/user-guide
+  why_testing: docs/WHY_WE_NEED_TESTING.md
+  testing_companion: docs/TESTING_COMPANION.md
+  test_plan_human: docs/TEST_PLAN_HUMAN.md
+  release_log: docs/RELEASE_LOG.md
+  seeding: docs/SEEDING.md
+
+commands:                                 # run from the repo root; empty = that layer does not exist
+  run_dev: npm run dev
+  build: npm run build
+  test_unit: npm run test:ci              # the fast suite (frontend / unit)
+  test_one: npx vitest run                # + a file path; single-file feedback loop
+  test_backend: cd backend && .venv/bin/python -m pytest tests -q
+  test_e2e: bash e2e/run.sh               # + a spec path; must fresh-seed its own database
+  verify: npm run verify                  # the full local gate that must be green before any deploy
+  deploy: ./deploy/redeploy.sh            # the ONE durable deploy path; must refuse on a red gate
+  smoke: curl -sf https://example.com/acmeledger/api/health
+  reseed: python3 tools/replay_seed.py    # rebuilds demo data; the skills ask before running it
+  docs_site: python3 tools/render_docs_site.py
+
+tests:
+  unit_dir: src/__tests__                 # where acceptance / regression tests live per layer
+  backend_dir: backend/tests
+  e2e_dir: e2e/spec
+  diagnostic_prefix: diag-                # files written by /find-issues carry this prefix
+  clock_seam: [src/data/clock.js, backend/app/clock.py]   # the only readers of time, or []
+
+environments:
+  local: http://localhost:5173
+  staging: https://staging.example.com/acmeledger/
+  production: https://example.com/acmeledger/
+
+personas:                                 # the roles a human tester can sign in as
+  - id: admin
+    login: admin@example.com
+    reach: everything, including configuration
+  - id: user
+    login: user@example.com
+    reach: day-to-day operations, no configuration
+  - id: viewer
+    login: viewer@example.com
+    reach: read-only
+  - id: appowner
+    login: owner@example.com
+    reach: mirrors admin; the vendor account, audited separately
+
+seed:
+  password: demo123                       # the shared demo password, if any
+  narrative_date: 2026-04-08              # the fixed date the seeded story is written around, if any
+  notable_records: >
+    Name the handful of seeded records testers will keep asking about, by id.
+
+issues:                                   # the standalone tracker (issues/app.py)
+  url: http://127.0.0.1:3002              # where tools/issues_cli.py finds it; override with ISSUES_URL
+  prefix: IS                              # key prefix on the internal board
+  brand: Acme Ledger · UAT
+  push_actor: Acme Ledger                 # how the internal board signs status pushes to a customer board
+  modules: [dashboard, records, reports, admin, auth, shell, api, data, infra]
+  customer_board: ""                      # base URL of the status-only customer board, if one runs
+
+release:
+  version_cmd: node tools/version.mjs     # prints the version string to stamp; blank = read version_file
+  changelog: docs/RELEASE_LOG.md

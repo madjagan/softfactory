@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "project": "{{project_name}}",
+    "taxonomy_version": 1,
+    "source": "docs/issues_log.md",
+    "classified_on": "{{date}}",
+    "artifact_url": "",
+    "buckets": ["functional-logic", "boundary-condition", "missing-validation", "integration-wiring", "data-config", "authorization", "ui-display", "crash-robustness", "performance", "tooling-infra", "not-applicable"],
+    "fix_kinds": ["logic-correction", "new-validation", "wiring-plumbing", "data-config-change", "new-mechanism", "refactor-consolidation", "defensive-handling", "ui-change", "test-or-docs-only", "none"]
+  },
+  "entries": [
+    {
+      "id": "#0",
+      "title": "#0 — Factory set up",
+      "kind": "other",
+      "issue_bucket": "not-applicable",
+      "fix_kind": "none",
+      "layer": "docs",
+      "module": "other",
+      "regression_test_added": false,
+      "note": "ledger, manifest and gates created by /setup-project"
+    }
+  ]
+}

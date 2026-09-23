@@ -1,0 +1,89 @@
+# softfactory
+
+A reusable software factory for Claude Code: the skills, agents, hooks, templates and a
+lean issue tracker that turn a **product summary** into a repo that runs the
+**setup → develop → deploy → maintain** loop with a documents-as-ledger discipline.
+
+Extracted from a production HRMS project (see `METHODOLOGY_BRIEF.md` for the methodology
+and the evidence behind it) and generalized: every project-specific value lives in one
+manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
+
+## The loop
+
+```
+ SETUP     /setup-project  product summary → factory.yaml · PRD · plan · issues log · feature list
+                            · human test plan · testing companion · CLAUDE.md · tracker · gates proven
+     │
+ DEVELOP   /create-feature  dated requirement → RED acceptance test → risk review → build → GREEN + real flow → log
+           /fix-issue       describe → reproduce → root cause (file:line) → minimal fix → regression test → no regression → log
+           /find-issues     hypotheses → case enumeration → layered tests with teeth → verdicts (never fixes)
+     │
+ DEPLOY    /release         tree identified → every gate green → deploy → smoke (health, asset type, version, login) → release log
+     │
+ MAINTAIN  /address-feedback  clarify → classify from evidence → dispatch one skill → close the register honestly
+           /process-issues    tracker queue → screenshots → skills → verdict + human test steps (Claude never closes)
+           /test-pack         human test plan · exploratory charters · per-module coaching pack, derived from the feature list
+           /issues-dashboard  classify the issues log → Issue Ledger page at a stable URL
+           docs-agent          answers "what does the product do"; owns and reconciles the per-persona user guides
+           evaluator-assistant sits beside a human tester: expected behaviour, defect / by design / not built / UX finding
+```
+
+## Install into a project
+
+```bash
+git clone <this repo> softfactory
+./softfactory/install.sh /path/to/your/repo
+cd /path/to/your/repo
+claude          # then:  /setup-project <the product summary, or a path to it>
+```
+
+`install.sh` copies the factory-owned files (`.claude/skills`, `.claude/agents`,
+`.claude/hooks`, `tools/`, `issues/`, `templates/`) and writes the project-owned ones
+once (`factory.yaml`, `CLAUDE.md`, `docs/*`). Re-run with `--update` to refresh the
+factory without touching your ledger. `/setup-project` then fills the manifest and the
+ledger from the summary, proves the verify and deploy gates, and starts the tracker.
+
+## What is in here
+
+| Path | What | Owner after install |
+|---|---|---|
+| `factory.example.yaml` | The manifest: name, stack, doc paths, commands per layer, personas, seed facts, tracker settings | project |
+| `.claude/skills/*` | Nine gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
+| `.claude/agents/docs-agent.md` | Documentation authority; derives and reconciles user guides | factory |
+| `.claude/agents/evaluator-assistant.md` | Assistant to a non-developer tester | factory |
+| `.claude/hooks/` | Feature-list change detector (content hash) → asks for guide reconciliation; stale-citation checker | factory |
+| `tools/factory.py` | Reads the manifest for scripts (`get`, `cmd`, `env`, `check`) | factory |
+| `tools/issues_cli.py` | Claude's side of the tracker | factory |
+| `tools/issues_dashboard.py` | Issues log → classified JSON → Issue Ledger HTML | factory |
+| `tools/render_docs_site.py` | Internal docs site from the testing docs and the ledger | factory |
+| `issues/` | The tracker: FastAPI + SQLite + screenshots, tester / claude / admin roles, server-enforced state machine, optional status-only customer board with mirroring | factory |
+| `templates/` | CLAUDE.md, the docs ledger, CI workflow, classified JSON — filled by `/setup-project` | project |
+| `deploy/docker-compose.issues.yml` | Two boards from one image, for internal deployments | project |
+
+## The rules the factory enforces
+
+1. **The ledger is the product's memory.** PRD, plan, issues log, feature list, release log. Work not recorded there did not happen.
+2. **Every phase has a gate; the test is the definition of done; RED first.**
+3. **Prove, never assume.** Root cause to `file:line` with a live observation; verify at the boundary that broke; drive the real flow.
+4. **Classify from evidence against the written requirement**, not the reporter's words.
+5. **One report, one class, one skill.**
+6. **Minimal blast radius; sibling patterns; opt-in over global.**
+7. **Derived artefacts are generated and drift-checked**, never hand-edited.
+8. **Design seams for testability**: a clock seam, twin engines with parity tests, fresh seeds, guard tests. Third instance of a bug class → a guard test.
+9. **Humans explore, automation checks.** Rule card, charters, report shape; every discovery returns as a test.
+10. **Role separation on the board.** Claude proposes verdicts with human-test steps; humans verify and close; product decisions stay with the owner.
+11. **Money, statutory and access changes are business decisions.** Confirm first.
+12. **Real dates from the shell**; the app clock and the doc clock are never mixed.
+13. **Write down the why**, tersely, everywhere.
+
+## Developing the factory itself
+
+```bash
+python3 -m pytest issues/tests -q            # the tracker's state machine
+python3 tools/factory.py --help
+./install.sh /tmp/some-empty-dir && (cd /tmp/some-empty-dir && python3 tools/factory.py check)
+```
+
+Skills are Markdown; keep the anatomy (directive → principles → phases with gates → DoD →
+anti-patterns) and reference manifest keys (`commands.verify`, `docs.prd`) rather than
+project commands. A rule without its reason gets deleted by the next reader.

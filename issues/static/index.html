@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Issue tracker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Geist:wght@400;500;600&family=Azeret+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg:#F6FAF8; --card:#FFFFFF; --s2:#EEF4F0; --bd:#DFE8E2; --bd2:#C4D2C9;
+    --ink:#12261E; --t2:#2F4A3E; --t3:#5B7166; --t4:#7F938A;
+    --nav:#0A3D2F; --ac:#317A28; --as:rgba(49,122,40,.09); --mint:#8DF87D;
+    --gn:#067647; --gs:rgba(6,118,71,.10); --am:#B54708; --ams:rgba(181,71,8,.10);
+    --rd:#B42318; --rs:rgba(180,35,24,.10); --vi:#5B4AB8; --vs:rgba(91,74,184,.10);
+    --scrim:rgba(5,41,31,.45);
+    --sh1:0 1px 2px rgba(10,61,47,.06), 0 1px 8px rgba(10,61,47,.05);
+    --sh3:0 12px 40px rgba(10,61,47,.18);
+    --sf:'Fraunces', Georgia, serif; --sn:'Geist', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; --mn:'Azeret Mono', 'SF Mono', Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#0B1712; --card:#10221A; --s2:#152C22; --bd:#1F3A2E; --bd2:#2C4C3D;
+    --ink:#E6F0EA; --t2:#C3D4CA; --t3:#93A89C; --t4:#6F8478;
+    --nav:#0F3A2C; --ac:#7CCB6E; --as:rgba(124,203,110,.14);
+    --gn:#5FC98F; --gs:rgba(95,201,143,.14); --am:#E39A4C; --ams:rgba(227,154,76,.14);
+    --rd:#EF6E62; --rs:rgba(239,110,98,.14); --vi:#A99BF2; --vs:rgba(169,155,242,.14);
+    --scrim:rgba(0,0,0,.6); --sh1:0 1px 2px rgba(0,0,0,.3); --sh3:0 12px 40px rgba(0,0,0,.5);
+  } }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:var(--sn); font-size:14px; line-height:1.5; margin:0; }
+  button, input, select, textarea { font:inherit; color:inherit; }
+  .mono { font-family:var(--mn); font-variant-numeric:tabular-nums; }
+  .wrap { max-width:1180px; margin:0 auto; padding:26px 22px 80px; }
+  header.top { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .eyebrow { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--t4); }
+  h1 { font-family:var(--sf); font-weight:500; font-size:30px; letter-spacing:-0.01em; margin:2px 0 0; line-height:1.1; }
+  h1 em { font-style:italic; color:var(--ac); }
+  .sub { color:var(--t3); font-size:12.5px; margin-top:6px; }
+  .btn { border-radius:8px; padding:8px 14px; border:1.5px solid var(--bd2); background:var(--card); cursor:pointer; font-weight:500; font-size:13px; line-height:1.2; }
+  .btn:hover { background:var(--s2); }
+  .btn.primary { background:linear-gradient(180deg,#3E8F33,#2C6E24); color:#fff; border-color:transparent; box-shadow:0 2px 10px rgba(14,124,102,.28); }
+  .btn.primary:hover { filter:brightness(1.05); background:linear-gradient(180deg,#3E8F33,#2C6E24); }
+  .btn.soft { background:var(--as); color:var(--ac); border-color:transparent; }
+  .btn.danger { background:var(--rs); color:var(--rd); border-color:transparent; }
+  .btn.sm { padding:5px 10px; font-size:12px; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline:2px solid var(--mint); outline-offset:1px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 14px; }
+  .chip { border-radius:20px; padding:4px 11px; border:1px solid var(--bd); background:var(--card); cursor:pointer; font-size:12px; display:inline-flex; gap:6px; align-items:center; }
+  .chip .n { font-family:var(--mn); font-size:11px; color:var(--t3); }
+  .chip.on { border-color:var(--ac); background:var(--as); color:var(--ac); }
+  .chip.on .n { color:var(--ac); }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+  .toolbar input[type=search] { flex:1 1 220px; }
+  input[type=text], input[type=search], input[type=password], select, textarea { border:1.5px solid var(--bd2); border-radius:12px; padding:8px 11px; background:var(--card); font-size:13px; }
+  textarea { width:100%; min-height:110px; resize:vertical; }
+  label.f { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--t3); margin:12px 0 5px; }
+  .list { display:flex; flex-direction:column; gap:6px; }
+  .row { display:grid; grid-template-columns:78px 1fr 118px 98px 110px 92px; gap:10px; align-items:center; background:var(--card); border:1px solid var(--bd); border-radius:10px; padding:9px 12px; cursor:pointer; }
+  .row:hover { background:var(--s2); }
+  .row .k { font-family:var(--mn); font-size:11.5px; color:var(--t3); }
+  .row .t { font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .row .t small { display:block; font-weight:400; color:var(--t4); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row .m { font-size:12px; color:var(--t3); }
+  .row .d { font-family:var(--mn); font-size:11px; color:var(--t4); text-align:right; }
+  .row .who { font-size:12px; color:var(--t3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lhead { display:grid; grid-template-columns:78px 1fr 118px 98px 110px 92px; gap:10px; padding:4px 12px; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--t4); font-weight:600; }
+  .lhead .d { text-align:right; }
+  @media (max-width:820px) { .row, .lhead { grid-template-columns:70px 1fr 100px; } .row .m, .row .who, .row .d, .lhead .m, .lhead .who, .lhead .d { display:none; } }
+  .pill { display:inline-block; font-size:10.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; padding:2px 8px; border-radius:20px; border:1px solid; white-space:nowrap; }
+  .st-new, .st-open { color:var(--ac); background:var(--as); border-color:rgba(49,122,40,.3); }
+  .st-more_info { color:var(--am); background:var(--ams); border-color:rgba(181,71,8,.3); }
+  .st-fixed, .st-verified { color:var(--gn); background:var(--gs); border-color:rgba(6,118,71,.3); }
+  .st-duplicate { color:var(--t3); background:var(--s2); border-color:var(--bd2); }
+  .st-as_speced { color:var(--vi); background:var(--vs); border-color:rgba(91,74,184,.3); }
+  .st-closed { color:var(--t4); background:transparent; border-color:var(--bd); }
+  .tag { display:inline-block; font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; padding:1px 7px; border-radius:20px; background:var(--ams); color:var(--am); }
+  .sev { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .sev-critical, .sev-high { color:var(--rd); } .sev-medium { color:var(--am); } .sev-low { color:var(--t3); }
+  .empty { text-align:center; color:var(--t4); padding:40px; }
+  .scrim { position:fixed; inset:0; background:var(--scrim); z-index:20; }
+  .drawer { position:fixed; top:0; right:0; bottom:0; width:min(680px,100vw); background:var(--bg); border-left:1px solid var(--bd); box-shadow:var(--sh3); z-index:21; overflow-y:auto; padding:22px 24px 60px; animation:slideLeft .2s ease; }
+  @keyframes slideLeft { from { transform:translateX(24px); opacity:0; } to { transform:none; opacity:1; } }
+  @media (prefers-reduced-motion: reduce) { .drawer { animation:none; } }
+  .drawer h2 { font-family:var(--sf); font-weight:500; font-size:22px; letter-spacing:-0.01em; margin:6px 0 4px; line-height:1.2; text-wrap:balance; }
+  .meta { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12px; color:var(--t3); margin:8px 0 14px; align-items:center; }
+  .card { background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:14px 16px; margin:12px 0; }
+  .card h3 { margin:0 0 8px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--t3); display:flex; align-items:center; gap:8px; }
+  .card.claude { border-color:rgba(49,122,40,.35); background:linear-gradient(180deg, var(--card), var(--as)); }
+  .orb { width:14px; height:14px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #8DF87D, #317A28 60%, #0A3D2F); box-shadow:0 0 0 2px rgba(141,248,125,.25); flex:none; }
+  .desc { white-space:pre-wrap; color:var(--t2); font-size:13.5px; }
+  .desc code, .kv code { font-family:var(--mn); font-size:12px; background:var(--s2); padding:0 4px; border-radius:4px; }
+  .kv { display:grid; grid-template-columns:130px 1fr; gap:6px 12px; font-size:13px; }
+  .kv .l { color:var(--t4); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; padding-top:2px; }
+  .kv .v { white-space:pre-wrap; color:var(--t2); }
+  .shots { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .shots a { display:block; border:1px solid var(--bd); border-radius:8px; overflow:hidden; background:var(--s2); }
+  .shots img { display:block; width:150px; height:100px; object-fit:cover; }
+  .timeline { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .timeline li { display:grid; grid-template-columns:118px 1fr; gap:10px; font-size:12.5px; }
+  .timeline .at { font-family:var(--mn); font-size:11px; color:var(--t4); }
+  .timeline .by { color:var(--t3); }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; }
+  .hint { font-size:12px; color:var(--t4); }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--nav); color:#fff; padding:10px 16px; border-radius:10px; font-size:13px; z-index:40; box-shadow:var(--sh3); }
+  .modal { position:fixed; inset:0; display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; z-index:30; background:var(--scrim); }
+  .modal .box { background:var(--bg); border:1px solid var(--bd); border-radius:16px; width:min(720px,100%); padding:22px 24px; box-shadow:var(--sh3); }
+  .modal h2 { font-family:var(--sf); font-weight:500; font-size:22px; margin:0 0 4px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 14px; }
+  @media (max-width:600px) { .grid2 { grid-template-columns:1fr; } }
+  .drop { border:1.5px dashed var(--bd2); border-radius:12px; padding:12px; text-align:center; color:var(--t4); font-size:12.5px; cursor:pointer; }
+  .drop.over { border-color:var(--ac); background:var(--as); }
+  .pending { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .pending img { width:88px; height:62px; object-fit:cover; border-radius:6px; border:1px solid var(--bd); }
+  .close { position:absolute; right:14px; top:12px; }
+  .dstate { font-size:12px; color:var(--t4); margin-bottom:8px; }
+  .flow { font-size:12px; color:var(--t3); border-top:1px solid var(--bd); margin-top:26px; padding-top:12px; }
+  .flow b { color:var(--t2); font-weight:500; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Issue tracker</div>
+      <h1>Issue <em>tracker</em></h1>
+      <div class="sub" id="sub">Loading…</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <label class="chip" style="cursor:pointer"><input type="checkbox" id="mine" style="margin:0"> Mine</label>
+      <button class="btn sm" id="whoBtn" title="Change who you are">…</button>
+      <button class="btn primary" id="newBtn">New issue</button>
+    </div>
+  </header>
+  <div class="chips" id="statusChips"></div>
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="Search title, description, key…" aria-label="Search">
+    <select id="fModule" aria-label="Module"><option value="">All modules</option></select>
+    <select id="fSource" aria-label="Source"><option value="">All sources</option><option value="tester">Filed here</option><option value="customer">Customer board</option><option value="excel">Observation sheet</option><option value="issues_log">Issues log</option></select>
+    <select id="fKind" aria-label="Kind"><option value="">All kinds</option></select>
+  </div>
+  <div class="lhead"><span>Key</span><span>Title</span><span>Status</span><span class="m">Module</span><span class="who">Reporter</span><span class="d">Updated</span></div>
+  <div class="list" id="list"><div class="empty">Loading issues…</div></div>
+  <div class="flow"><b>Flow.</b> New → the Issue Agent sets <b>Fixed</b>, <b>Duplicate</b>, <b>As speced</b> or <b>More info</b> → you mark <b>Verified</b> (or answer and reopen) → <b>Closed</b> once the recommended human tests pass. The Issue Agent reads this board; every change it makes carries a root cause, the fix, the tests it added and what a person should still try.</div>
+</div>
+<div id="drawerHost"></div>
+<div id="modalHost"></div>
+
+<script>
+(function () {
+  const SLABEL = {new:'New', more_info:'More info', open:'Open', fixed:'Fixed', duplicate:'Duplicate', as_speced:'As speced', verified:'Verified', closed:'Closed'};
+  const state = { meta: null, issues: [], status: 'active', q: '', module: '', source: '', kind: '', mine: false, open: null, me: '', token: '', role: 'tester', poll: null };
+  const $ = (s, r) => (r || document).querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtDate = iso => iso ? String(iso).slice(0, 10) : '';
+  const who = by => { const b = String(by || '').toLowerCase(); if (b === 'claude') return state.meta && state.meta.customer ? (state.meta.pushActor || 'Product team') : 'Issue Agent'; if (b === 'sync') return 'Customer board'; return by; };
+  const rich = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  let toastT = null;
+  function toast(msg) { let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); } t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
+  try { state.me = localStorage.getItem('issues.me') || ''; state.token = localStorage.getItem('issues.token') || ''; state.role = localStorage.getItem('issues.role') || 'tester'; } catch (e) {}
+
+  // ---------- API ----------
+  async function api(path, opts = {}) {
+    const headers = Object.assign({ 'X-Actor': state.me, 'X-Role': state.role }, opts.headers || {});
+    if (state.token) headers['X-Issues-Token'] = state.token;
+    if (opts.json !== undefined) { headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(opts.json); }
+    const r = await fetch(path, Object.assign({}, opts, { headers }));
+    let data = null; try { data = await r.json(); } catch (e) {}
+    if (!r.ok) { const err = new Error((data && data.error) || r.statusText); err.status = r.status; throw err; }
+    return data;
+  }
+  async function refresh() {
+    try {
+      const [issues, stats] = await Promise.all([api('api/issues'), api('api/stats')]);
+      state.issues = issues; state.stats = stats;
+      $('#sub').textContent = `${state.me ? 'You are ' + state.me + ' · ' : ''}${stats.total} issues, ${stats.total - (stats.byStatus.closed || 0)} active.`;
+      renderList();
+    } catch (e) {
+      if (e.status === 401) { $('#sub').textContent = 'This board needs an access token.'; askIdentity(true); }
+      else $('#sub').textContent = 'Could not load issues: ' + e.message;
+    }
+  }
+
+  // ---------- identity ----------
+  function askIdentity(needToken) {
+    const host = $('#modalHost');
+    host.innerHTML = `<div class="modal"><div class="box" role="dialog" aria-label="Who are you">
+      <h2>Who are you?</h2><div class="hint">Your name goes on the issues you file and the actions you take.</div>
+      <label class="f" for="iName">Name</label><input type="text" id="iName" style="width:100%" value="${esc(state.me)}" placeholder="e.g. Priya">
+      <div ${needToken || state.token ? '' : 'hidden'}><label class="f" for="iToken">Access token</label><input type="password" id="iToken" style="width:100%" value="${esc(state.token)}"></div>
+      ${(state.meta && state.meta.roles || ['tester']).includes('admin') ? `<label class="f" for="iRole">Role</label><select id="iRole" style="width:100%"><option value="tester" ${state.role === 'tester' ? 'selected' : ''}>Tester</option><option value="admin" ${state.role === 'admin' ? 'selected' : ''}>Admin (can set any status)</option></select>` : ''}
+      <div class="actions" style="margin-top:16px"><button class="btn primary" id="iOk">Continue</button></div></div></div>`;
+    $('#iOk').onclick = () => {
+      state.me = $('#iName').value.trim(); state.token = ($('#iToken') && $('#iToken').value.trim()) || ''; state.role = $('#iRole') ? $('#iRole').value : 'tester';
+      if (!state.me) { $('#iName').focus(); return; }
+      try { localStorage.setItem('issues.me', state.me); localStorage.setItem('issues.token', state.token); localStorage.setItem('issues.role', state.role); } catch (e) {}
+      host.innerHTML = ''; $('#whoBtn').textContent = state.me; refresh();
+    };
+    setTimeout(() => $('#iName').focus(), 50);
+  }
+  $('#whoBtn').onclick = () => askIdentity(false);
+
+  // ---------- filters & list ----------
+  function visible() {
+    const q = state.q.trim().toLowerCase();
+    return state.issues.filter(i => {
+      if (state.status === 'active') { if (i.status === 'closed') return false; }
+      else if (state.status !== 'all' && i.status !== state.status) return false;
+      if (state.module && i.module !== state.module) return false;
+      if (state.source && i.source !== state.source) return false;
+      if (state.kind && i.kind !== state.kind) return false;
+      if (state.mine && (i.reporter || '').toLowerCase() !== state.me.toLowerCase()) return false;
+      if (q && !((i.key + ' ' + i.title + ' ' + (i.sourceRef || '')).toLowerCase().includes(q))) return false;
+      return true;
+    });
+  }
+  function renderChips() {
+    const counts = (state.stats && state.stats.byStatus) || {};
+    const total = (state.stats && state.stats.total) || 0;
+    const items = [['active', 'Active', total - (counts.closed || 0)], ['all', 'All', total]].concat(state.meta.statuses.map(s => [s, SLABEL[s], counts[s] || 0]));
+    $('#statusChips').innerHTML = items.map(([k, l, n]) => `<button class="chip ${state.status === k ? 'on' : ''}" data-s="${k}">${l} <span class="n">${n}</span></button>`).join('');
+  }
+  function renderList() {
+    renderChips();
+    const rows = visible();
+    const list = $('#list');
+    if (!rows.length) { list.innerHTML = `<div class="empty">${state.issues.length ? 'Nothing matches these filters.' : 'No issues yet. File the first one.'}</div>`; return; }
+    list.innerHTML = rows.map(i => `<div class="row" data-k="${esc(i.key)}" role="button" tabindex="0">
+        <span class="k">${esc(i.key)}</span>
+        <span class="t">${esc(i.title)}<small>${esc(i.kind || '')}${i.severity ? ' · ' : ''}<span class="sev sev-${esc(i.severity)}">${esc(i.severity || '')}</span>${i.source === 'customer' ? ' · <span class="tag">Customer</span>' : ''}${i.sourceRef ? ' · ' + esc(i.sourceRef) : ''}${i.screenshotCount ? ' · 📎' + i.screenshotCount : ''}</small></span>
+        <span><span class="pill st-${esc(i.status)}">${SLABEL[i.status] || esc(i.status)}</span></span>
+        <span class="m">${esc(i.module || '')}</span>
+        <span class="who">${esc(i.reporter || '')}</span>
+        <span class="d">${fmtDate(i.updatedAt)}</span></div>`).join('');
+  }
+  $('#statusChips').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; state.status = b.dataset.s; renderList(); });
+  $('#q').addEventListener('input', e => { state.q = e.target.value; renderList(); });
+  $('#fModule').addEventListener('change', e => { state.module = e.target.value; renderList(); });
+  $('#fSource').addEventListener('change', e => { state.source = e.target.value; renderList(); });
+  $('#fKind').addEventListener('change', e => { state.kind = e.target.value; renderList(); });
+  $('#mine').addEventListener('change', e => { state.mine = e.target.checked; renderList(); });
+  $('#list').addEventListener('click', e => { const r = e.target.closest('[data-k]'); if (r) openDrawer(r.dataset.k); });
+  $('#list').addEventListener('keydown', e => { if (e.key === 'Enter') { const r = e.target.closest('[data-k]'); if (r) openDrawer(r.dataset.k); } });
+
+  // ---------- drawer ----------
+  function transitionsFor(i) {
+    const t = [], s = i.status;
+    if (s === 'more_info') t.push({ to: 'open', label: 'Answer & reopen', cls: 'primary', note: true });
+    if (['fixed', 'duplicate', 'as_speced'].includes(s)) { t.push({ to: 'verified', label: 'Verified', cls: 'primary', note: false }); t.push({ to: 'open', label: 'Reopen', cls: 'danger', note: true }); }
+    if (s === 'verified') { t.push({ to: 'closed', label: 'Close', cls: 'primary', note: false }); t.push({ to: 'open', label: 'Reopen', cls: 'danger', note: true }); }
+    if (s === 'closed') t.push({ to: 'open', label: 'Reopen', cls: '', note: true });
+    return t;
+  }
+  const shotsHtml = ids => (ids || []).length ? `<div class="shots">${ids.map(id => `<a href="uploads/${esc(id)}" target="_blank" rel="noopener"><img src="uploads/${esc(id)}" alt="screenshot" loading="lazy"></a>`).join('')}</div>` : '';
+  async function openDrawer(key) {
+    state.open = key;
+    let i; try { i = await api('api/issues/' + encodeURIComponent(key)); } catch (e) { toast(e.message); return; }
+    const host = $('#drawerHost');
+    const c = i.claude || {};
+    const claudeRows = [['Root cause', c.rootCause], ['Fix proposed', c.fixProposed], ['Fix', c.fix], ['Tests added', c.tests], ['Human testing', c.humanTests], ['Duplicate of', c.duplicateOf], ['Spec reference', c.specRef], ['Info needed', c.infoNeeded], ['Files', c.files]].filter(r => r[1]);
+    const tr = transitionsFor(i);
+    host.innerHTML = `<div class="scrim" id="scrim"></div><div class="drawer" role="dialog" aria-label="Issue ${esc(i.key)}">
+      <button class="btn sm close" id="dclose">Close ✕</button>
+      <div class="eyebrow mono">${esc(i.key)} · ${esc(i.source === 'issues_log' ? 'Issues log' : i.source === 'excel' ? 'Observation sheet' : i.source === 'customer' ? 'Customer board' : 'Filed here')}${i.sourceRef ? ' · ' + esc(i.sourceRef) : ''}</div>
+      <h2>${esc(i.title)}</h2>
+      <div class="meta"><span class="pill st-${esc(i.status)}">${SLABEL[i.status] || esc(i.status)}</span><span>${esc(i.kind || '')}</span><span class="sev sev-${esc(i.severity)}">${esc(i.severity || '')}</span><span>${esc(i.module || '')}</span><span>Reported by ${esc(i.reporter || 'unknown')}${i.persona ? ' as ' + esc(i.persona) : ''}</span><span class="mono">${fmtDate(i.createdAt)}</span>${i.build ? `<span class="mono">${esc(i.build)}</span>` : ''}</div>
+      <div class="card"><h3>Description</h3><div class="desc">${rich(i.description || '')}</div>${shotsHtml(i.screenshots)}</div>
+      ${state.meta.customer ? '' : claudeRows.length || c.processedAt ? `<div class="card claude"><h3><span class="orb"></span>Comments from Analyzer${c.processedAt ? ` <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0">${fmtDate(c.processedAt)}</span>` : ''}</h3><div class="kv">${claudeRows.map(r => `<div class="l">${r[0]}</div><div class="v">${rich(r[1])}</div>`).join('')}</div></div>` : `<div class="card claude"><h3><span class="orb"></span>Comments from Analyzer</h3><div class="hint">Not processed yet. The Issue Agent picks up New and Open issues.</div></div>`}
+      ${(i.comments || []).length ? `<div class="card"><h3>Information added</h3><ul class="timeline">${i.comments.map(cm => `<li><span class="at">${fmtDate(cm.at)}<br><span class="by">${esc(who(cm.by) || '')}</span></span><span class="desc">${rich(cm.text)}${shotsHtml(cm.screenshots)}</span></li>`).join('')}</ul></div>` : ''}
+      <div class="card"><h3>Your move</h3>
+        ${!state.meta.customer && i.source === 'customer' && ['fixed', 'duplicate', 'as_speced'].includes(i.status) ? `<div class="dstate" style="color:var(--am)">Customer-filed: the customer still sees this as ${i.status === 'fixed' ? 'New/Open' : 'open'} — marking it <b>Verified</b> here is what releases <b>${SLABEL[i.status]}</b> to their board.</div>` : ''}
+        <div class="dstate">${(state.meta.customer ? {new:'Received. Waiting for the product team.', open:'Reopened with your information; waiting for the product team.', more_info:'The product team needs more information from you — see the latest note below, then answer and reopen.', fixed:'Fixed. Please check it on the next build, then mark Verified — or reopen with what you see.', duplicate:'The same defect is already being worked. If you agree, mark Verified.', as_speced:'This is the specified behaviour. If you agree, mark Verified; otherwise reopen and say what you expected.', verified:'Verified. Close it when done.', closed:'Closed.'} : {new:'Waiting for the Issue Agent to process.', open:'Reopened with your information; waiting for the Issue Agent.', more_info:'The Issue Agent needs more information from you.', fixed:'The Issue Agent fixed it. Run the recommended human tests, then mark Verified.', duplicate:'The Issue Agent marked this a duplicate. If you agree, mark Verified.', as_speced:'Issue Analyzer says this is the specified behaviour. If you agree, mark Verified; otherwise reopen and say why.', verified:'Verified. Close it when done.', closed:'Closed.'})[i.status] || ''}</div>
+        <label class="f" for="note">Note${tr.some(t => t.note) ? ' (required to reopen or answer)' : ''}</label>
+        <textarea id="note" style="min-height:70px" placeholder="${state.meta.customer ? 'What you saw, steps, or the answer we asked for…' : 'What you saw, steps, or the answer the Issue Agent asked for…'} Paste a screenshot straight into this box (Ctrl+V / ⌘V)."></textarea>
+        <div class="drop" id="cdrop">Drop screenshots here, paste them into the note, or <u>choose files</u>. Click a thumbnail to remove it before you send.</div>
+        <div class="pending" id="cshots"></div>
+        <div class="actions">
+          <button class="btn sm" id="addShot">Add screenshot</button><input type="file" id="cfile" accept="image/*" multiple hidden>
+          <button class="btn sm soft" id="addInfo">Add information</button>
+          ${tr.map(t => `<button class="btn sm ${t.cls}" data-to="${t.to}" data-note="${t.note ? 1 : 0}">${t.label}</button>`).join('')}
+          ${state.role === 'admin' ? `<select id="adminStatus" class="btn sm" aria-label="Set status"><option value="">Set status…</option>${state.meta.statuses.map(s => `<option value="${s}">${SLABEL[s]}</option>`).join('')}</select>` : ''}
+        </div>
+      </div>
+      <div class="card"><h3>History</h3><ul class="timeline">${(i.history || []).slice().reverse().map(h => `<li><span class="at">${fmtDate(h.at)}<br><span class="by">${esc(who(h.by) || '')}</span></span><span>${h.from ? `<span class="pill st-${esc(h.from)}">${SLABEL[h.from] || esc(h.from)}</span> → ` : ''}<span class="pill st-${esc(h.to)}">${SLABEL[h.to] || esc(h.to)}</span>${h.note ? `<div class="desc" style="margin-top:4px">${rich(h.note)}</div>` : ''}</span></li>`).join('') || '<li><span class="at"></span><span class="hint">No history.</span></li>'}</ul></div>
+    </div>`;
+    const close = () => { host.innerHTML = ''; state.open = null; };
+    $('#scrim').onclick = close; $('#dclose').onclick = close;
+    document.onkeydown = e => { if (e.key === 'Escape') close(); };
+    let pendingShots = [];
+    const cf = $('#cfile'), cdrop = $('#cdrop');
+    const showPending = () => { $('#cshots').innerHTML = pendingShots.map(id => `<img src="uploads/${id}" alt="" title="Click to remove" data-id="${id}" style="cursor:pointer">`).join(''); };
+    const addShots = async (files) => {
+      const imgs = [...files].filter(f => f && (f.type || '').startsWith('image/'));
+      if (!imgs.length) { toast('That is not an image. PNG, JPEG, GIF or WebP only.'); return; }
+      for (const f of imgs) { toast('Uploading ' + (f.name || 'screenshot') + '…'); const id = await uploadOne(f); if (id) { pendingShots.push(id); showPending(); } }
+      if (pendingShots.length) toast(pendingShots.length + ' screenshot' + (pendingShots.length > 1 ? 's' : '') + ' attached — now Add information, Verified or Reopen.');
+    };
+    $('#addShot').onclick = () => cf.click();
+    cdrop.onclick = () => cf.click();
+    cf.onchange = async () => { await addShots(cf.files); cf.value = ''; };
+    $('#note').addEventListener('paste', e => { const fs = [...(e.clipboardData && e.clipboardData.items || [])].filter(it => it.kind === 'file').map(it => it.getAsFile()).filter(Boolean); if (fs.length) { e.preventDefault(); addShots(fs); } });
+    const drawerEl = host.querySelector('.drawer');
+    drawerEl.addEventListener('dragover', e => { e.preventDefault(); cdrop.classList.add('over'); });
+    drawerEl.addEventListener('dragleave', () => cdrop.classList.remove('over'));
+    drawerEl.addEventListener('drop', e => { e.preventDefault(); cdrop.classList.remove('over'); addShots(e.dataTransfer.files); });
+    $('#cshots').addEventListener('click', e => { const img = e.target.closest('img[data-id]'); if (!img) return; pendingShots = pendingShots.filter(id => id !== img.dataset.id); showPending(); });
+    $('#addInfo').onclick = async () => {
+      const text = $('#note').value.trim(); if (!text && !pendingShots.length) { toast('Write a note or add a screenshot first.'); return; }
+      try { await api('api/issues/' + i.key + '/comments', { method: 'POST', json: { text, screenshots: pendingShots } }); pendingShots = []; toast('Added.'); refresh(); openDrawer(i.key); } catch (e) { toast(e.message); }
+    };
+    host.querySelectorAll('[data-to]').forEach(b => b.onclick = async () => {
+      const note = $('#note').value.trim();
+      if (b.dataset.note === '1' && !note) { toast('A note is required for that.'); $('#note').focus(); return; }
+      try { await api('api/issues/' + i.key + '/transition', { method: 'POST', json: { to: b.dataset.to, note, screenshots: pendingShots } }); pendingShots = []; toast(`${i.key} → ${SLABEL[b.dataset.to]}`); refresh(); openDrawer(i.key); } catch (e) { toast(e.message); }
+    });
+    const adm = $('#adminStatus'); if (adm) adm.onchange = async () => { if (!adm.value) return; try { await api('api/issues/' + i.key + '/transition', { method: 'POST', json: { to: adm.value, note: $('#note').value.trim() || 'Set by admin', screenshots: pendingShots } }); pendingShots = []; refresh(); openDrawer(i.key); } catch (e) { toast(e.message); } };
+  }
+  async function uploadOne(file) {
+    const fd = new FormData(); fd.append('file', file, file.name || 'screenshot.png');
+    try { const r = await api('api/uploads', { method: 'POST', body: fd }); return r.id; } catch (e) { toast('Upload failed: ' + e.message); return null; }
+  }
+
+  // ---------- new issue ----------
+  function openModal() {
+    const host = $('#modalHost'), m = state.meta;
+    host.innerHTML = `<div class="modal" id="modal"><div class="box" role="dialog" aria-label="New issue">
+      <h2>New issue</h2><div class="hint">One problem per issue. Say what you did, what you expected, and what happened.</div>
+      <label class="f" for="nTitle">Title</label><input type="text" id="nTitle" style="width:100%" placeholder="Short and specific, e.g. Cancel request does nothing on My Requests">
+      <div class="grid2">
+        <div><label class="f" for="nModule">Module</label><select id="nModule" style="width:100%">${m.modules.map(x => `<option value="${x}">${x}</option>`).join('')}</select></div>
+        <div><label class="f" for="nKind">Kind</label><select id="nKind" style="width:100%"><option value="bug">Bug</option><option value="enhancement">Enhancement</option><option value="question">Question</option><option value="decision">Decision needed</option></select></div>
+        <div><label class="f" for="nSev">Severity</label><select id="nSev" style="width:100%">${m.severities.map(s => `<option value="${s}" ${s === 'medium' ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div><label class="f" for="nPersona">Logged in as</label><input type="text" id="nPersona" style="width:100%" placeholder="e.g. Fatima Hassan (HR)"></div>
+      </div>
+      <label class="f" for="nDesc">Steps, expected, actual</label><textarea id="nDesc" placeholder="1. Go to …&#10;2. Click …&#10;Expected: …&#10;Actual: …&#10;&#10;Paste a screenshot straight into this box."></textarea>
+      <label class="f" for="nBuild">Build (bottom-left of the app sidebar)</label><input type="text" id="nBuild" class="mono" style="width:100%" placeholder="3.0.0+build.437.697bd3a">
+      <label class="f">Screenshots</label><div class="drop" id="drop">Drop images here, click to choose, or paste into the description. Click a thumbnail to remove it.</div><input type="file" id="nfile" accept="image/*" multiple hidden><div class="pending" id="nshots"></div>
+      <div class="actions" style="margin-top:16px"><button class="btn primary" id="nSubmit">File issue</button><button class="btn" id="nCancel">Cancel</button><span class="hint" id="nMsg"></span></div>
+    </div></div>`;
+    const shots = [];
+    const showShots = () => { $('#nshots').innerHTML = shots.map(id => `<img src="uploads/${id}" alt="" title="Click to remove" data-id="${id}" style="cursor:pointer">`).join(''); };
+    const addFiles = async files => { const imgs = [...files].filter(f => f && (f.type || '').startsWith('image/')); if (!imgs.length) { $('#nMsg').textContent = 'That is not an image. PNG, JPEG, GIF or WebP only.'; return; } for (const f of imgs) { $('#nMsg').textContent = 'Uploading…'; const id = await uploadOne(f); if (id) { shots.push(id); showShots(); } $('#nMsg').textContent = ''; } };
+    $('#nshots').addEventListener('click', e => { const img = e.target.closest('img[data-id]'); if (!img) return; const k = shots.indexOf(img.dataset.id); if (k >= 0) shots.splice(k, 1); showShots(); });
+    const drop = $('#drop'), nf = $('#nfile');
+    drop.onclick = () => nf.click(); nf.onchange = () => { addFiles(nf.files); nf.value = ''; };
+    drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); }; drop.ondragleave = () => drop.classList.remove('over');
+    drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
+    $('#nDesc').addEventListener('paste', e => { const fs = [...(e.clipboardData.items || [])].filter(it => it.kind === 'file').map(it => it.getAsFile()).filter(Boolean); if (fs.length) { e.preventDefault(); addFiles(fs); } });
+    $('#nCancel').onclick = () => { host.innerHTML = ''; };
+    $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') host.innerHTML = ''; });
+    $('#nSubmit').onclick = async () => {
+      const title = $('#nTitle').value.trim(), description = $('#nDesc').value.trim();
+      if (!title) { $('#nMsg').textContent = 'A title is needed.'; return; }
+      $('#nSubmit').disabled = true; $('#nMsg').textContent = 'Filing…';
+      try {
+        const doc = await api('api/issues', { method: 'POST', json: { title, description, module: $('#nModule').value, kind: $('#nKind').value, severity: $('#nSev').value, persona: $('#nPersona').value.trim(), build: $('#nBuild').value.trim(), screenshots: shots } });
+        host.innerHTML = ''; toast(doc.key + ' filed.'); refresh();
+      } catch (e) { $('#nSubmit').disabled = false; $('#nMsg').textContent = 'Could not file: ' + e.message; }
+    };
+    setTimeout(() => $('#nTitle').focus(), 50);
+  }
+  $('#newBtn').onclick = () => { if (!state.me) { askIdentity(false); return; } openModal(); };
+
+  // ---------- boot ----------
+  async function boot() {
+    try { state.meta = await api('api/meta', { headers: { 'X-Role': 'tester' } }); }
+    catch (e) { if (e.status === 401) { $('#sub').textContent = 'This board needs an access token.'; askIdentity(true); return; } $('#sub').textContent = 'Server unreachable: ' + e.message; return; }
+    $('#fModule').innerHTML += state.meta.modules.map(x => `<option value="${x}">${x}</option>`).join('');
+    $('#fKind').innerHTML += state.meta.kinds.map(x => `<option value="${x}">${x}</option>`).join('');
+    if (state.meta.brand) { document.querySelector('.eyebrow').textContent = state.meta.brand; document.title = state.meta.brand + ' · Issues'; }
+    if (state.meta.customer) {
+      $('#fSource').hidden = true;
+      document.querySelector('.flow').innerHTML = '<b>Flow.</b> New → the product team sets <b>Fixed</b>, <b>Duplicate</b>, <b>As speced</b> or <b>More info</b> → you mark <b>Verified</b> (or answer and reopen) → <b>Closed</b>. You see each status change and the note that comes with it; attach a screenshot wherever you can.';
+    } else if (state.meta.mirrors) {
+      document.querySelector('.flow').innerHTML += ' Issues filed on the customer board arrive here tagged <span class="tag">Customer</span>; a More-info question reaches them at once, a verdict only after it is marked Verified here.';
+    }
+    if (!(state.meta.roles || ['tester']).includes(state.role)) { state.role = 'tester'; try { localStorage.setItem('issues.role', 'tester'); } catch (e) {} }
+    $('#whoBtn').textContent = state.me || 'Who are you?';
+    if (!state.me) askIdentity(false);
+    await refresh();
+    state.poll = setInterval(() => { if (!document.hidden) refresh(); }, 20000);
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

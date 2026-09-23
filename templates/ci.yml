@@ -1,0 +1,20 @@
+# CI: the same gate as the local verify, on every push and PR.
+# /setup-project adapts the run steps to factory.yaml → commands.* and drops it at
+# .github/workflows/ci.yml. Keep the test step BEFORE any build or image step.
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # {{toolchain_setup}}   e.g. actions/setup-node@v4 with the version the Dockerfile uses
+      - run: {{install}}
+      - run: {{test_unit}}
+      - run: {{build}}
+      # If the repo builds a container, build it here too: its Dockerfile must run the
+      # suite before the build step, so a red suite fails the image.
+      # - run: docker build -t {{slug}}:ci .

@@ -1,0 +1,56 @@
+# Issue tracker layer — INTERNAL deployments only. Two boards from one image:
+#
+#   docker compose -f deploy/docker-compose.issues.yml up -d --build
+#
+# {{slug}}-issues   — the internal board (testers + Claude), full analysis visible
+# {{slug}}-feedback — the customer board: own database, status only, no admin role;
+#                     the internal board mirrors it and pushes status back
+#
+# Put both behind your reverse proxy with basic auth (one user for /issues/, another for
+# /feedback/). Resolve upstreams per request (Docker DNS) so a recreated container that
+# takes another's IP does not receive its traffic; recreate, don't reload, when a
+# single-file bind-mounted proxy config changes (the old inode stays mounted).
+#
+# .env: ISSUES_TOKEN, FEEDBACK_TOKEN (optional second gate inside each app),
+#       FEEDBACK_BRAND, FEEDBACK_PREFIX.
+services:
+  issues:
+    build:
+      context: ..
+      dockerfile: issues/Dockerfile
+    container_name: {{slug}}-issues
+    restart: unless-stopped
+    environment:
+      - ISSUES_TOKEN=${ISSUES_TOKEN:-}
+      - ISSUES_PREFIX=${ISSUES_PREFIX:-IS}
+      - ISSUES_BRAND=${ISSUES_BRAND:-{{project_name}} · UAT}
+      - ISSUES_MODULES=${ISSUES_MODULES:-}
+      - ISSUES_PUSH_ACTOR=${ISSUES_PUSH_ACTOR:-{{project_name}}}
+      - FEEDBACK_SYNC_URL=http://{{slug}}-feedback:3002
+      - FEEDBACK_SYNC_TOKEN=${FEEDBACK_TOKEN:-}
+    volumes:
+      - {{slug}}_issues_data:/data
+    expose:
+      - "3002"
+
+  feedback:
+    build:
+      context: ..
+      dockerfile: issues/Dockerfile
+    container_name: {{slug}}-feedback
+    restart: unless-stopped
+    environment:
+      - ISSUES_TOKEN=${FEEDBACK_TOKEN:-}
+      - ISSUES_BRAND=${FEEDBACK_BRAND:-{{project_name}} · Feedback}
+      - ISSUES_PREFIX=${FEEDBACK_PREFIX:-FB}
+      - ISSUES_MODULES=${ISSUES_MODULES:-}
+      - ISSUES_ROLES=tester,claude        # no admin on the customer board
+      - ISSUES_CUSTOMER=1                 # status only: the analysis never leaves the server
+    volumes:
+      - {{slug}}_feedback_data:/data
+    expose:
+      - "3002"
+
+volumes:
+  {{slug}}_issues_data:
+  {{slug}}_feedback_data:
