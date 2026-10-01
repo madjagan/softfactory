@@ -63,7 +63,8 @@ IMAGE_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
 # Who may move an issue where. Testers verify and reopen; Claude gives verdicts; admin does anything.
 TESTER_MOVES = {"more_info": {"open"}, "fixed": {"verified", "open"}, "duplicate": {"verified", "open"},
                 "as_speced": {"verified", "open"}, "verified": {"closed", "open"}, "closed": {"open"}}
-CLAUDE_MOVES = {"new": {"fixed", "duplicate", "as_speced", "more_info"}, "open": {"fixed", "duplicate", "as_speced", "more_info"}}
+CLAUDE_VERDICTS = {"fixed", "duplicate", "as_speced", "more_info"}
+CLAUDE_MOVES = {"new": set(CLAUDE_VERDICTS), "open": set(CLAUDE_VERDICTS)}
 NOTE_REQUIRED = {("more_info", "open"), ("fixed", "open"), ("duplicate", "open"), ("as_speced", "open"), ("verified", "open"), ("closed", "open")}
 
 
@@ -176,6 +177,19 @@ class Comment(BaseModel):
     screenshots: list[str] = []
 
 
+class SplitPart(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    description: str = ""
+    module: str = "other"
+    kind: str = "bug"
+    severity: str = "medium"
+
+
+class Split(BaseModel):
+    parts: list[SplitPart] = Field(min_length=1, max_length=20)
+    note: str = ""
+
+
 class Transition(BaseModel):
     to: str
     note: str = ""
@@ -192,7 +206,7 @@ def public(doc: dict) -> dict:
 
 def summary(doc: dict) -> dict:
     keep = ["key", "num", "title", "status", "module", "kind", "severity", "source", "sourceRef", "reporter",
-            "createdAt", "updatedAt", "build", "persona"]
+            "createdAt", "updatedAt", "build", "persona", "splitInto"]
     s = {k: doc.get(k) for k in keep}
     s["screenshotCount"] = len(doc.get("screenshots") or [])
     s["processed"] = bool((doc.get("claude") or {}).get("processedAt")) and not CUSTOMER
@@ -270,6 +284,83 @@ def create_issue(body: NewIssue, a: Actor = Depends(actor)):
     return doc
 
 
+@app.post("/api/issues/{key}/split", status_code=201)
+def split_issue(key: str, body: Split, a: Actor = Depends(actor)):
+    """One report, several independent defects or requirements: the agent SPLITS it (1-n). Each
+    part becomes an issue of its own (source `split`, sourceRef = the parent), inheriting the
+    reporter, build, persona and screenshots, worked and closed on its own. The parent stays
+    the report — and, for a customer issue, the one link the customer sees. Never on a customer
+    board: the customer files reports; the split is the team's reading of them."""
+    if CUSTOMER:
+        raise HTTPException(404, "Not on a customer board")
+    if a.role not in ("claude", "admin"):
+        raise HTTPException(403, "Only the Issue Agent or an admin splits an issue")
+    for n, part in enumerate(body.parts, 1):
+        for val, allowed, what in ((part.kind, KINDS, "kind"), (part.severity, SEVERITIES, "severity"), (part.module, MODULES, "module")):
+            if val not in allowed:
+                raise HTTPException(400, f"Part {n}: unknown {what}: {val}")
+    at = now_iso()
+    who = a.name or a.role
+    with tx() as con:
+        parent = get_issue(con, key)
+        if parent.get("source") == "split":
+            raise HTTPException(409, f"{key} is itself a part of {parent.get('sourceRef')}; split the parent instead")
+        children = []
+        for part in body.parts:
+            num = next_num(con)
+            child = {"key": f"{PREFIX}-{num}", "num": num, "title": part.title.strip(), "description": part.description.strip(),
+                     "module": part.module, "kind": part.kind, "severity": part.severity, "persona": parent.get("persona", ""),
+                     "build": parent.get("build", ""), "status": "new", "source": "split", "sourceRef": key,
+                     "reporter": parent.get("reporter", ""), "createdAt": at, "updatedAt": at,
+                     "screenshots": list(parent.get("screenshots") or []), "claude": {}, "comments": [],
+                     "history": [{"at": at, "by": who, "from": "", "to": "new", "note": f"Split from {key} ({parent.get('title', '')})."}]}
+            put_issue(con, child)
+            children.append(child)
+        keys = [c["key"] for c in children]
+        parent["splitInto"] = [*(parent.get("splitInto") or []), *keys]
+        parent["updatedAt"] = at
+        text = (body.note.strip() + "\n\n" if body.note.strip() else "") + "Split into " + ", ".join(f"{c['key']} — {c['title']}" for c in children) + "."
+        parent.setdefault("comments", []).append({"at": at, "by": who, "text": text, "screenshots": []})
+        parent.setdefault("history", []).append({"at": at, "by": who, "from": parent["status"], "to": parent["status"], "note": "Split into " + ", ".join(keys)})
+        put_issue(con, parent)
+    return {"parent": public(parent), "children": [public(c) for c in children]}
+
+
+@app.post("/api/issues/{key}/unsplit")
+def unsplit_issue(key: str, body: Comment, a: Actor = Depends(actor)):
+    """Fold a split back into its parent. Parts are never deleted: each becomes a duplicate of
+    the parent (its analysis stays readable), and the parent forgets the split."""
+    if CUSTOMER:
+        raise HTTPException(404, "Not on a customer board")
+    if a.role not in ("claude", "admin"):
+        raise HTTPException(403, "Only the Issue Agent or an admin folds a split")
+    at = now_iso()
+    who = a.name or a.role
+    with tx() as con:
+        parent = get_issue(con, key)
+        parts = list(parent.get("splitInto") or [])
+        if not parts:
+            raise HTTPException(409, f"{key} is not split")
+        for k in parts:
+            child = get_issue(con, k)
+            if child.get("status") not in ("verified", "closed"):
+                frm = child["status"]
+                child["status"] = "duplicate"
+                child.setdefault("claude", {})["duplicateOf"] = key
+                child["claude"]["processedAt"] = at
+                child["history"].append({"at": at, "by": who, "from": frm, "to": "duplicate", "note": f"Folded back into {key}."})
+                child.setdefault("comments", []).append({"at": at, "by": who, "text": f"Folded back into {key}: the report is worked as one issue.", "screenshots": []})
+                child["updatedAt"] = at
+                put_issue(con, child)
+        parent.pop("splitInto", None)
+        parent["updatedAt"] = at
+        text = (body.text.strip() + "\n\n" if body.text.strip() else "") + "Folded back: " + ", ".join(parts) + " are duplicates of this issue; it is worked as one."
+        parent.setdefault("comments", []).append({"at": at, "by": who, "text": text, "screenshots": []})
+        parent.setdefault("history", []).append({"at": at, "by": who, "from": parent["status"], "to": parent["status"], "note": "Split folded back: " + ", ".join(parts)})
+        put_issue(con, parent)
+    return public(parent)
+
+
 @app.post("/api/issues/{key}/comments")
 def add_comment(key: str, body: Comment, a: Actor = Depends(actor)):
     if not body.text.strip() and not body.screenshots:
@@ -291,7 +382,10 @@ def transition(key: str, body: Transition, a: Actor = Depends(actor)):
         doc = get_issue(con, key)
         frm = doc["status"]
         allowed = {"tester": TESTER_MOVES, "claude": CLAUDE_MOVES}.get(a.role)
-        if allowed is not None and body.to not in allowed.get(frm, set()):
+        # Claude may restate a verdict it already holds — same status, fields revised (a duplicate-of
+        # re-pointed at the right key). Its own verdict statuses only; a tester's stay out of reach.
+        revising = a.role == "claude" and body.to == frm and frm in CLAUDE_VERDICTS
+        if allowed is not None and body.to not in allowed.get(frm, set()) and not revising:
             raise HTTPException(409, f"A {a.role} cannot move {key} from {frm} to {body.to}")
         if a.role != "admin" and (frm, body.to) in NOTE_REQUIRED and not body.note.strip():
             raise HTTPException(400, "A note is required for that move")

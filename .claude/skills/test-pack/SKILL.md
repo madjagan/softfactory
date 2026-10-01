@@ -65,6 +65,11 @@ Single file, no build step:
 
 If the `evaluator-assistant` agent exists, it uses these packs; keep the shape stable.
 
+Related: a **one-page click-by-click guide for a single subject** (a module, feature or use
+case) is `/test-guide`, and its annotated screenshot storyboard is `/guide-screenshots`. The
+test plan says *what* to check across the product; a test guide says *exactly how* for one
+thing.
+
 ## Procedure
 
 1. Diff the feature list since the plan's footer date (`git log -p` on it); list rows to

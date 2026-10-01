@@ -23,6 +23,8 @@ manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
  MAINTAIN  /address-feedback  clarify → classify from evidence → dispatch one skill → close the register honestly
            /process-issues    tracker queue → screenshots → skills → verdict + human test steps (Claude never closes)
            /test-pack         human test plan · exploratory charters · per-module coaching pack, derived from the feature list
+           /test-guide        a one-page customer tester's guide for one module / feature / use case, labels verified in the source
+           /guide-screenshots annotated screenshot storyboard for a guide (ring + pointer + caption), narrated videos on request
            /issues-dashboard  classify the issues log → Issue Ledger page at a stable URL
            docs-agent          answers "what does the product do"; owns and reconciles the per-persona user guides
            evaluator-assistant sits beside a human tester: expected behaviour, defect / by design / not built / UX finding
@@ -48,7 +50,8 @@ ledger from the summary, proves the verify and deploy gates, and starts the trac
 | Path | What | Owner after install |
 |---|---|---|
 | `factory.example.yaml` | The manifest: name, stack, doc paths, commands per layer, personas, seed facts, tracker settings | project |
-| `.claude/skills/*` | Nine gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
+| `.claude/skills/*` | Eleven gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
+| `tools/screenshots/` | Storyboard capture for tester guides: `stack.sh` (fresh stack from the manifest), `lib.mjs` (ring + pointer + caption, shoot-then-click), `capture.mjs`, `build_videos.py`; `app.config.mjs` and `storyboards/` are the project's | factory + project |
 | `.claude/agents/docs-agent.md` | Documentation authority; derives and reconciles user guides | factory |
 | `.claude/agents/evaluator-assistant.md` | Assistant to a non-developer tester | factory |
 | `.claude/hooks/` | Feature-list change detector (content hash) → asks for guide reconciliation; stale-citation checker | factory |
@@ -56,7 +59,7 @@ ledger from the summary, proves the verify and deploy gates, and starts the trac
 | `tools/issues_cli.py` | Claude's side of the tracker | factory |
 | `tools/issues_dashboard.py` | Issues log → classified JSON → Issue Ledger HTML | factory |
 | `tools/render_docs_site.py` | Internal docs site from the testing docs and the ledger | factory |
-| `issues/` | The tracker: FastAPI + SQLite + screenshots, tester / claude / admin roles, server-enforced state machine, optional status-only customer board with mirroring | factory |
+| `issues/` | The tracker: FastAPI + SQLite + screenshots, tester / claude / admin roles, server-enforced state machine, 1-n split of a report into parts (owner-approved), optional status-only customer board with mirroring | factory |
 | `templates/` | CLAUDE.md, the docs ledger, CI workflow, classified JSON — filled by `/setup-project` | project |
 | `deploy/docker-compose.issues.yml` | Two boards from one image, for internal deployments | project |
 

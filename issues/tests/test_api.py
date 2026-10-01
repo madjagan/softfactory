@@ -83,6 +83,20 @@ def test_claude_cannot_verify_or_close(client):
     assert client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr("claude", "claude")).status_code == 409
 
 
+def test_claude_may_restate_its_own_verdict_but_not_a_testers_status(client):
+    # IS-424 — a duplicate-of pointed at an issues-log number; re-pointing it at the tracker key
+    # is the same verdict with revised fields, not a move.
+    k = file_issue(client)["key"]
+    client.post(f"/api/issues/{k}/transition", json={"to": "duplicate", "claude": {"duplicateOf": "#184"}}, headers=hdr("claude", "claude"))
+    r = client.post(f"/api/issues/{k}/transition", json={"to": "duplicate", "claude": {"duplicateOf": "IS-345"}}, headers=hdr("claude", "claude"))
+    assert r.status_code == 200 and r.json()["status"] == "duplicate" and r.json()["claude"]["duplicateOf"] == "IS-345"
+    assert r.json()["history"][-1] == {**r.json()["history"][-1], "from": "duplicate", "to": "duplicate"}
+    # Verified is a tester's status: Claude may not restate it, and a tester may not restate a verdict.
+    client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr())
+    assert client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr("claude", "claude")).status_code == 409
+    assert client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr()).status_code == 409
+
+
 def test_admin_may_set_any_status(client):
     k = file_issue(client)["key"]
     assert client.post(f"/api/issues/{k}/transition", json={"to": "closed"}, headers=hdr("Madhavan", "admin")).json()["status"] == "closed"
@@ -271,3 +285,56 @@ def test_sync_endpoint_needs_a_mirror_and_a_non_tester(boards):
     _, _, internal, tp = boards
     assert tp.post("/api/sync", headers=hdr()).status_code == 403
     assert tp.post("/api/sync", headers=hdr("claude", "claude")).status_code == 404   # no FEEDBACK_SYNC_URL here
+
+
+def test_a_report_splits_into_independent_issues_linked_both_ways(client):
+    p = file_issue(client, title="Three things wrong on one screen", description="a, b and c")
+    r = client.post(f"/api/issues/{p['key']}/split", json={"parts": [
+        {"title": "Part A", "module": "api", "kind": "bug", "severity": "high", "description": "a"},
+        {"title": "Part B", "module": "ui", "kind": "enhancement", "severity": "low", "description": "b"}]}, headers=hdr())
+    assert r.status_code == 403, "a tester files reports; the agent splits them"
+    r = client.post(f"/api/issues/{p['key']}/split", json={"parts": [
+        {"title": "Part A", "module": "api", "kind": "bug", "severity": "high", "description": "a"},
+        {"title": "Part B", "module": "ui", "kind": "enhancement", "severity": "low", "description": "b"}], "note": "two defects in one report"},
+        headers=hdr("Issue Agent", "claude"))
+    assert r.status_code == 201, r.text
+    out = r.json()
+    a, b = out["children"]
+    assert [c["key"] for c in out["children"]] == ["IS-502", "IS-503"]
+    assert a["source"] == "split" and a["sourceRef"] == p["key"] and a["reporter"] == "Priya" and a["status"] == "new"
+    assert b["module"] == "ui" and b["kind"] == "enhancement"
+    parent = client.get(f"/api/issues/{p['key']}", headers=hdr()).json()
+    assert parent["splitInto"] == ["IS-502", "IS-503"] and parent["status"] == "new"
+    assert "Split into IS-502" in parent["comments"][-1]["text"] and "two defects" in parent["comments"][-1]["text"]
+    # each part is worked on its own
+    r = client.post("/api/issues/IS-502/transition", json={"to": "fixed", "claude": {"fix": "done"}}, headers=hdr("Issue Agent", "claude"))
+    assert r.status_code == 200 and client.get(f"/api/issues/{p['key']}", headers=hdr()).json()["status"] == "new"
+    # a part is not split again; the parent is
+    r = client.post("/api/issues/IS-502/split", json={"parts": [{"title": "Deeper"}]}, headers=hdr("Issue Agent", "claude"))
+    assert r.status_code == 409
+    rows = client.get("/api/issues?status=new", headers=hdr()).json()
+    assert any(x["key"] == p["key"] and x.get("splitInto") == ["IS-502", "IS-503"] for x in rows)
+
+
+def test_a_customer_board_has_no_split(boards):
+    customer, fb, internal, tp = boards
+    f = fb.post("/api/issues", json={"title": "Two problems", "description": "x"}, headers=hdr("Nousheed")).json()
+    r = fb.post(f"/api/issues/{f['key']}/split", json={"parts": [{"title": "One"}]}, headers=hdr("Issue Agent", "claude"))
+    assert r.status_code == 404
+
+
+def test_a_split_folds_back_into_its_parent_without_deleting_the_parts(client):
+    p = file_issue(client, title="Two things")
+    out = client.post(f"/api/issues/{p['key']}/split", json={"parts": [{"title": "One"}, {"title": "Two"}]}, headers=hdr("Issue Agent", "claude")).json()
+    a, b = [c["key"] for c in out["children"]]
+    client.post(f"/api/issues/{a}/transition", json={"to": "fixed", "claude": {"fix": "x"}}, headers=hdr("Issue Agent", "claude"))
+    r = client.post(f"/api/issues/{p['key']}/unsplit", json={"text": "meant another issue"}, headers=hdr())
+    assert r.status_code == 403
+    r = client.post(f"/api/issues/{p['key']}/unsplit", json={"text": "meant another issue"}, headers=hdr("Issue Agent", "claude"))
+    assert r.status_code == 200 and "splitInto" not in r.json() and "meant another issue" in r.json()["comments"][-1]["text"]
+    for k in (a, b):
+        d = client.get(f"/api/issues/{k}", headers=hdr()).json()
+        assert d["status"] == "duplicate" and d["claude"]["duplicateOf"] == p["key"] and d["source"] == "split"
+    assert client.get(f"/api/issues/{a}", headers=hdr()).json()["claude"]["fix"] == "x", "the part's analysis is kept"
+    r = client.post(f"/api/issues/{p['key']}/unsplit", json={}, headers=hdr("Issue Agent", "claude"))
+    assert r.status_code == 409

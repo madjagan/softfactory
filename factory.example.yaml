@@ -87,3 +87,13 @@ issues:                                   # the standalone tracker (issues/app.p
 release:
   version_cmd: node tools/version.mjs     # prints the version string to stamp; blank = read version_file
   changelog: docs/RELEASE_LOG.md
+
+screenshots:                              # the local stack /guide-screenshots drives (tools/screenshots/stack.sh)
+  seed: cd backend && POSTGRES_DB=acme_test PYTHONPATH=. .venv/bin/python -m seed.seed     # fresh test seed; blank = none
+  api: cd backend && POSTGRES_DB=acme_test TEST_TOOLS=1 JWT_SECRET=shots PYTHONPATH=. .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 3002
+  api_health: http://127.0.0.1:3002/api/health
+  web: npx vite --config tools/screenshots/vite.shots.config.mjs     # a dev server whose /api proxy points at :3002
+  web_url: http://localhost:5174/
+  api_pkill: uvicorn app.main:app.*--port 3002                        # patterns stack.sh down uses; blank = the command text
+  web_pkill: vite.shots.config
+  # Selectors, demo password and viewport live in tools/screenshots/app.config.mjs (project-owned).

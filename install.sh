@@ -19,7 +19,8 @@ TARGET="$(cd "$TARGET" && pwd)"
 
 copy_tree() {  # copy_tree <src-dir> <dst-dir>  — factory-owned, always refreshed
   mkdir -p "$2"
-  ( cd "$1" && find . -type f ! -name '.DS_Store' ! -path './data/*' ! -path '*/__pycache__/*' ) | while read -r f; do
+  ( cd "$1" && find . -type f ! -name '.DS_Store' ! -path './data/*' ! -path '*/__pycache__/*' \
+      ! -path './screenshots/app.config.mjs' ! -path './screenshots/storyboards/*' ) | while read -r f; do
     mkdir -p "$2/$(dirname "$f")"
     cp "$1/$f" "$2/$f"
   done
@@ -68,6 +69,9 @@ if [ "$MODE" != "--update" ]; then
     copy_if_absent "$HERE/templates/docs/$f" "$TARGET/docs/$f"
   done
   copy_if_absent "$HERE/templates/issues_classified.json" "$TARGET/docs/issues_classified.json"
+  # screenshot capture: the app adapter and the example storyboard are the project's to edit
+  copy_if_absent "$HERE/tools/screenshots/app.config.mjs" "$TARGET/tools/screenshots/app.config.mjs"
+  copy_if_absent "$HERE/tools/screenshots/storyboards/example-payroll.mjs" "$TARGET/tools/screenshots/storyboards/example-payroll.mjs"
 fi
 
 # .gitignore entries the factory needs

@@ -7,6 +7,7 @@
   python3 tools/issues_cli.py verdict IS-512 --status fixed --note "…" --root-cause "…" --fix-proposed "…" --fix "…" \
       --tests "…" --human-tests "…" [--files "…"] [--duplicate-of IS-3] [--spec-ref "§3.x"] [--info-needed "…"]
   python3 tools/issues_cli.py comment IS-512 --note "…"
+  python3 tools/issues_cli.py split IS-512 --part "title | module | kind | severity | description" [--part …]   # one report → n issues
 
 Env: ISSUES_URL (default http://127.0.0.1:3002), ISSUES_TOKEN (if the server requires one).
 """
@@ -88,6 +89,24 @@ def cmd_comment(a):
     print(f"{doc['key']}: comment added")
 
 
+def cmd_split(a):
+    parts = []
+    for raw in a.part:
+        f = [x.strip() for x in raw.split("|")]
+        if len(f) < 5:
+            sys.exit(f"--part needs 'title | module | kind | severity | description': {raw!r}")
+        parts.append({"title": f[0], "module": f[1], "kind": f[2], "severity": f[3], "description": "|".join(f[4:]).strip()})
+    out = call("POST", f"api/issues/{a.key}/split", {"parts": parts, "note": a.note or ""})
+    for c in out["children"]:
+        print(f"{c['key']}  new  {c['module']:10} {c['title']}")
+    print(f"{out['parent']['key']} split into {', '.join(c['key'] for c in out['children'])}")
+
+
+def cmd_unsplit(a):
+    doc = call("POST", f"api/issues/{a.key}/unsplit", {"text": a.note or ""})
+    print(f"{doc['key']}: split folded back; the parts are duplicates of it")
+
+
 def cmd_sync(a):
     rep = call("POST", "api/sync")
     print(f"mirrored {len(rep['created'])} new, {rep['comments']} comment(s), {rep['customerMoves']} customer move(s); pushed {rep['pushed'] or 'nothing'}"
@@ -106,6 +125,9 @@ def main():
         s.add_argument(opt)
     s.set_defaults(fn=cmd_verdict)
     s = sub.add_parser("comment"); s.add_argument("key"); s.add_argument("--note", required=True); s.set_defaults(fn=cmd_comment)
+    s = sub.add_parser("split", help="one report → several independent issues (1-n); each --part is 'title | module | kind | severity | description'")
+    s.add_argument("key"); s.add_argument("--part", action="append", required=True); s.add_argument("--note"); s.set_defaults(fn=cmd_split)
+    s = sub.add_parser("unsplit", help="fold a split back into its parent; the parts become duplicates of it"); s.add_argument("key"); s.add_argument("--note"); s.set_defaults(fn=cmd_unsplit)
     s = sub.add_parser("sync", help="mirror the customer board now (it also runs on its own every 30 s)"); s.set_defaults(fn=cmd_sync)
     a = p.parse_args()
     a.fn(a)

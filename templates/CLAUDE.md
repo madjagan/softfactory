@@ -31,6 +31,7 @@ Use them; do not go direct.
 | Work the testers' board | `/process-issues` |
 | Ship | `/release` |
 | Refresh tester material | `/test-pack` · the Issue Ledger: `/issues-dashboard` |
+| Write user help for one subject | `/test-guide <subject>` → `docs/<SUBJECT>_TEST_GUIDE.md`; then `/guide-screenshots <guide>` for the storyboard and videos |
 | Ask what the product does | `docs-agent` subagent · help a tester: `evaluator-assistant` |
 
 ## Documentation (the ledger)
@@ -45,6 +46,10 @@ All project docs live in `docs/`; only this file stays at the root.
 - `docs/TEST_PLAN_HUMAN.md`, `docs/TESTING_COMPANION.md`, `docs/WHY_WE_NEED_TESTING.md` —
   the human half of testing. `docs/RELEASE_LOG.md` — what shipped when. `docs/SEEDING.md`
   — which seeder is safe.
+- `docs/<SUBJECT>_TEST_GUIDE.md` — customer tester's guides, one per module / feature / use
+  case (`/test-guide`); `docs/screenshots/<subject>/` their annotated storyboards and videos
+  (`/guide-screenshots`, via `tools/screenshots/`). Labels in a guide are verified against the
+  rendered source; the capture is the ground truth when it disagrees with the guide.
 
 ## Architecture
 

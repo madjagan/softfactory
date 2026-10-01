@@ -93,6 +93,13 @@
   .kv { display:grid; grid-template-columns:130px 1fr; gap:6px 12px; font-size:13px; }
   .kv .l { color:var(--t4); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; padding-top:2px; }
   .kv .v { white-space:pre-wrap; color:var(--t2); }
+  /* Long text wraps in EVERY drawer card and modal — Description, Analyzer, Information
+     added, Your move, History. A grid or flex child defaults to min-width:auto, so one
+     unbreakable token (a test id, a path, a URL) widened its column past the card;
+     min-width:0 lets every cell shrink and overflow-wrap:anywhere breaks the token. */
+  .drawer, .modal .box { overflow-wrap:anywhere; }
+  .card, .card *, .meta > * { min-width:0; }
+  .desc code, .kv code { white-space:pre-wrap; }
   .shots { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
   .shots a { display:block; border:1px solid var(--bd); border-radius:8px; overflow:hidden; background:var(--s2); }
   .shots img { display:block; width:150px; height:100px; object-fit:cover; }
@@ -228,7 +235,7 @@
     if (!rows.length) { list.innerHTML = `<div class="empty">${state.issues.length ? 'Nothing matches these filters.' : 'No issues yet. File the first one.'}</div>`; return; }
     list.innerHTML = rows.map(i => `<div class="row" data-k="${esc(i.key)}" role="button" tabindex="0">
         <span class="k">${esc(i.key)}</span>
-        <span class="t">${esc(i.title)}<small>${esc(i.kind || '')}${i.severity ? ' · ' : ''}<span class="sev sev-${esc(i.severity)}">${esc(i.severity || '')}</span>${i.source === 'customer' ? ' · <span class="tag">Customer</span>' : ''}${i.sourceRef ? ' · ' + esc(i.sourceRef) : ''}${i.screenshotCount ? ' · 📎' + i.screenshotCount : ''}</small></span>
+        <span class="t">${esc(i.title)}<small>${esc(i.kind || '')}${i.severity ? ' · ' : ''}<span class="sev sev-${esc(i.severity)}">${esc(i.severity || '')}</span>${i.source === 'split' ? ` · <span class="tag">Part of ${esc(i.sourceRef)}</span>` : ''}${(i.splitInto || []).length ? ` · <span class="tag">Split into ${i.splitInto.length}</span>` : ''}${i.source === 'customer' ? ' · <span class="tag">Customer</span>' : ''}${i.sourceRef ? ' · ' + esc(i.sourceRef) : ''}${i.screenshotCount ? ' · 📎' + i.screenshotCount : ''}</small></span>
         <span><span class="pill st-${esc(i.status)}">${SLABEL[i.status] || esc(i.status)}</span></span>
         <span class="m">${esc(i.module || '')}</span>
         <span class="who">${esc(i.reporter || '')}</span>
@@ -262,10 +269,12 @@
     const tr = transitionsFor(i);
     host.innerHTML = `<div class="scrim" id="scrim"></div><div class="drawer" role="dialog" aria-label="Issue ${esc(i.key)}">
       <button class="btn sm close" id="dclose">Close ✕</button>
-      <div class="eyebrow mono">${esc(i.key)} · ${esc(i.source === 'issues_log' ? 'Issues log' : i.source === 'excel' ? 'Observation sheet' : i.source === 'customer' ? 'Customer board' : 'Filed here')}${i.sourceRef ? ' · ' + esc(i.sourceRef) : ''}</div>
+      <div class="eyebrow mono">${esc(i.key)} · ${esc(i.source === 'issues_log' ? 'Issues log' : i.source === 'excel' ? 'Observation sheet' : i.source === 'customer' ? 'Customer board' : i.source === 'split' ? `Part of ${esc(i.sourceRef)}` : 'Filed here')}${i.sourceRef ? ' · ' + esc(i.sourceRef) : ''}</div>
       <h2>${esc(i.title)}</h2>
       <div class="meta"><span class="pill st-${esc(i.status)}">${SLABEL[i.status] || esc(i.status)}</span><span>${esc(i.kind || '')}</span><span class="sev sev-${esc(i.severity)}">${esc(i.severity || '')}</span><span>${esc(i.module || '')}</span><span>Reported by ${esc(i.reporter || 'unknown')}${i.persona ? ' as ' + esc(i.persona) : ''}</span><span class="mono">${fmtDate(i.createdAt)}</span>${i.build ? `<span class="mono">${esc(i.build)}</span>` : ''}</div>
       <div class="card"><h3>Description</h3><div class="desc">${rich(i.description || '')}</div>${shotsHtml(i.screenshots)}</div>
+      ${(i.splitInto || []).length ? `<div class="card"><h3>Split into</h3><div class="desc">${i.splitInto.map(k => `<a href="#" class="mono" data-open="${esc(k)}">${esc(k)}</a>`).join(' · ')}</div></div>` : ''}
+      ${i.source === 'split' && i.sourceRef ? `<div class="card"><h3>Part of</h3><div class="desc"><a href="#" class="mono" data-open="${esc(i.sourceRef)}">${esc(i.sourceRef)}</a></div></div>` : ''}
       ${state.meta.customer ? '' : claudeRows.length || c.processedAt ? `<div class="card claude"><h3><span class="orb"></span>Comments from Analyzer${c.processedAt ? ` <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0">${fmtDate(c.processedAt)}</span>` : ''}</h3><div class="kv">${claudeRows.map(r => `<div class="l">${r[0]}</div><div class="v">${rich(r[1])}</div>`).join('')}</div></div>` : `<div class="card claude"><h3><span class="orb"></span>Comments from Analyzer</h3><div class="hint">Not processed yet. The Issue Agent picks up New and Open issues.</div></div>`}
       ${(i.comments || []).length ? `<div class="card"><h3>Information added</h3><ul class="timeline">${i.comments.map(cm => `<li><span class="at">${fmtDate(cm.at)}<br><span class="by">${esc(who(cm.by) || '')}</span></span><span class="desc">${rich(cm.text)}${shotsHtml(cm.screenshots)}</span></li>`).join('')}</ul></div>` : ''}
       <div class="card"><h3>Your move</h3>
@@ -286,6 +295,7 @@
     </div>`;
     const close = () => { host.innerHTML = ''; state.open = null; };
     $('#scrim').onclick = close; $('#dclose').onclick = close;
+    host.querySelectorAll('[data-open]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openDrawer(a.dataset.open); }));
     document.onkeydown = e => { if (e.key === 'Escape') close(); };
     let pendingShots = [];
     const cf = $('#cfile'), cdrop = $('#cdrop');
