@@ -10,7 +10,9 @@ metadata:
 # Setup Project — from a product summary to a working factory
 
 You are turning a product summary (the invocation argument, a pasted brief, or a file the
-user points at) into a repo that runs the **setup → develop → deploy → maintain** loop. Run
+user points at; with no argument, `docs/PRODUCT_SUMMARY.md` as written by
+`/product-interview` — if that is still the unfilled template, offer to run the interview
+first) into a repo that runs the **setup → develop → deploy → maintain** loop. Run
 the phases **in order**; each ends in a **gate**. Everything you write into a doc is a
 **dated entry** stamped with `date +%F` — never a guessed date.
 
@@ -89,6 +91,7 @@ from the summary** — a template with `{{placeholders}}` still in it is not don
 
 | File | What to write |
 |---|---|
+| `PRODUCT_SUMMARY.md` | The input, not an output: keep it as written. If the summary came from elsewhere, copy it in under the template's headings; `[assumed]` items stay marked. Its component tools are the module list, its primary personas lead §2 of the PRD, its fit table seeds each §3 user story, and its §7 open questions join Phase 1's single batch of questions. |
 | `PRODUCT_REQUIREMENTS.md` | §1 purpose and principles from the summary; §2 personas from the manifest; **§3 one dated section per module** (`§3.N — <Module>`), each with a user story, 3–8 numbered observable acceptance criteria, scope / non-goals, RBAC and data impact. Mark each `Planned (date)`. |
 | `IMPLEMENTATION_PLAN.md` | Phase table (0 test infrastructure · 1 ledger · 2 modules · 3 hardening · 4 backlog); **one row per PRD §3.N naming the test file that is its gate**, status `Planned`. |
 | `issues_log.md` | Header only, plus entry `#0 — Factory set up` (date, what was created, which commands were verified). |

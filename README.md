@@ -12,6 +12,9 @@ manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
 ## The loop
 
 ```
+ DISCOVER  /product-interview  CLI interview → personas · value proposition canvas (jobs, pains, gains → fit)
+                            · component tools · alternatives · success metrics · stack → docs/PRODUCT_SUMMARY.md
+     │
  SETUP     /setup-project  product summary → factory.yaml · PRD · plan · issues log · feature list
                             · human test plan · testing companion · CLAUDE.md · tracker · gates proven
      │
@@ -37,21 +40,22 @@ manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
 git clone <this repo> softfactory
 ./softfactory/install.sh /path/to/your/repo
 cd /path/to/your/repo
-claude          # then:  /setup-project <the product summary, or a path to it>
+claude          # then:  /product-interview   (writes docs/PRODUCT_SUMMARY.md)
+                #        /setup-project       (reads it; or pass a summary or a path to one)
 ```
 
 `install.sh` copies the factory-owned files (`.claude/skills`, `.claude/agents`,
 `.claude/hooks`, `tools/`, `issues/`, `templates/`) and writes the project-owned ones
 once (`factory.yaml`, `CLAUDE.md`, `docs/*`). Re-run with `--update` to refresh the
-framework without touching your ledger. `/setup-project` then fills the manifest and the
-ledger from the summary, proves the verify and deploy gates, and starts the tracker.
+framework without touching your ledger. `/product-interview` writes the product summary;
+`/setup-project` then fills the manifest and the ledger from it, proves the verify and deploy gates, and starts the tracker.
 
 ## What is in here
 
 | Path | What | Owner after install |
 |---|---|---|
 | `factory.example.yaml` | The manifest: name, stack, doc paths, commands per layer, personas, seed facts, tracker settings | project |
-| `.claude/skills/*` | Eleven gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
+| `.claude/skills/*` | Twelve gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
 | `tools/screenshots/` | Storyboard capture for tester guides: `stack.sh` (fresh stack from the manifest), `lib.mjs` (ring + pointer + caption, shoot-then-click), `capture.mjs`, `build_videos.py`; `app.config.mjs` and `storyboards/` are the project's | factory + project |
 | `.claude/agents/docs-agent.md` | Documentation authority; derives and reconciles user guides | factory |
 | `.claude/agents/evaluator-assistant.md` | Assistant to a non-developer tester | factory |

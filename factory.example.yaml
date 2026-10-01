@@ -18,6 +18,7 @@ stack:
   design_system: src/tokens.js            # the file that is "law" for UI, or blank
 
 docs:                                     # all relative to the repo root; these are the defaults
+  product_summary: docs/PRODUCT_SUMMARY.md   # written by /product-interview
   prd: docs/PRODUCT_REQUIREMENTS.md
   plan: docs/IMPLEMENTATION_PLAN.md
   issues_log: docs/issues_log.md

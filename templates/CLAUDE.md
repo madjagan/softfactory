@@ -24,6 +24,7 @@ Use them; do not go direct.
 
 | Want to… | Use |
 |---|---|
+| Re-examine who the product is for and why | `/product-interview` (revises `docs/PRODUCT_SUMMARY.md`) |
 | Add or change a capability | `/create-feature` (amendment mode for a change) |
 | Fix something broken | `/fix-issue` — always, even for "obvious" fixes |
 | Find out whether something works | `/find-issues` (diagnostic only) |
@@ -37,6 +38,8 @@ Use them; do not go direct.
 ## Documentation (the ledger)
 
 All project docs live in `docs/`; only this file stays at the root.
+- `docs/PRODUCT_SUMMARY.md` — personas, value proposition canvas, component tools, success
+  metrics; written by `/product-interview`, the source the PRD was set up from.
 - `docs/PRODUCT_REQUIREMENTS.md` — the PRD: dated `§3.N` sections, numbered acceptance criteria.
 - `docs/IMPLEMENTATION_PLAN.md` — one row per section with **its test file as the gate**;
   a section is complete only when that file passes in `{{verify}}`.

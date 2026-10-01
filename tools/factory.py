@@ -23,6 +23,7 @@ MANIFEST = ROOT / "factory.yaml"
 
 # Conventional locations; the manifest's docs: block overrides any of them.
 DEFAULT_DOCS = {
+    "product_summary": "docs/PRODUCT_SUMMARY.md",
     "prd": "docs/PRODUCT_REQUIREMENTS.md",
     "plan": "docs/IMPLEMENTATION_PLAN.md",
     "issues_log": "docs/issues_log.md",

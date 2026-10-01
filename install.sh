@@ -5,9 +5,9 @@
 #   ./install.sh /path/to/repo --update   # refresh factory-owned files only; never touches
 #                                         # factory.yaml, docs/ or CLAUDE.md once they exist
 #
-# Then, inside the target repo, run Claude Code and say: /setup-project <product summary>
-# (or point it at a file). Idempotent: existing factory.yaml, docs/*, CLAUDE.md and
-# tracker data are never overwritten.
+# Then, inside the target repo, run Claude Code and say: /product-interview (writes
+# docs/PRODUCT_SUMMARY.md), then /setup-project (or give it a summary or a path to one).
+# Idempotent: existing factory.yaml, docs/*, CLAUDE.md and tracker data are never overwritten.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -65,7 +65,7 @@ if [ "$MODE" != "--update" ]; then
   echo "project-owned (written once):"
   copy_if_absent "$HERE/factory.example.yaml" "$TARGET/factory.yaml"
   copy_if_absent "$HERE/templates/CLAUDE.md" "$TARGET/CLAUDE.md"
-  for f in PRODUCT_REQUIREMENTS.md IMPLEMENTATION_PLAN.md issues_log.md FEATURE_LIST.md WHY_WE_NEED_TESTING.md TESTING_COMPANION.md TEST_PLAN_HUMAN.md RELEASE_LOG.md SEEDING.md user-guide/README.md; do
+  for f in PRODUCT_SUMMARY.md PRODUCT_REQUIREMENTS.md IMPLEMENTATION_PLAN.md issues_log.md FEATURE_LIST.md WHY_WE_NEED_TESTING.md TESTING_COMPANION.md TEST_PLAN_HUMAN.md RELEASE_LOG.md SEEDING.md user-guide/README.md; do
     copy_if_absent "$HERE/templates/docs/$f" "$TARGET/docs/$f"
   done
   copy_if_absent "$HERE/templates/issues_classified.json" "$TARGET/docs/issues_classified.json"
@@ -82,6 +82,7 @@ done
 
 echo
 echo "Done. Next, in $TARGET with Claude Code:"
-echo "  /setup-project <paste the product summary, or a path to it>"
+echo "  /product-interview   interviews you and writes docs/PRODUCT_SUMMARY.md"
+echo "  /setup-project       reads it (or pass a summary or a path to one)"
 echo "It fills factory.yaml and the docs ledger, proves the gates, and starts the tracker."
 echo "Later: ./install.sh $TARGET --update  refreshes skills/agents/tools without touching your docs."
