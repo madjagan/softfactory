@@ -4,7 +4,7 @@ A reusable software factory for Claude Code: the skills, agents, hooks, template
 lean issue tracker that turn a **product summary** into a repo that runs the
 **setup → develop → deploy → maintain** loop with a documents-as-ledger discipline.
 
-Extracted from a production HRMS project (see `METHODOLOGY_BRIEF.md` for the methodology
+Extracted from a production project (see `METHODOLOGY_BRIEF.md` for the methodology
 and the evidence behind it) and generalized: every project-specific value lives in one
 manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
 
