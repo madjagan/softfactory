@@ -1,4 +1,4 @@
-// EXAMPLE storyboard (from the HRMS project this factory was extracted from) — copy, rename to
+// EXAMPLE storyboard (a payroll flow from the source product) — copy, rename to
 // <subject>.mjs, and replace every login, group id, label and setup call with THIS app's.
 // A storyboard is data: the library (../lib.mjs + ../app.config.mjs) knows how to sign in, open
 // groups, draw and shoot. One `shot` per guide step, in the guide's order; a step whose result

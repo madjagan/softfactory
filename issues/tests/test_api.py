@@ -99,7 +99,7 @@ def test_claude_may_restate_its_own_verdict_but_not_a_testers_status(client):
 
 def test_admin_may_set_any_status(client):
     k = file_issue(client)["key"]
-    assert client.post(f"/api/issues/{k}/transition", json={"to": "closed"}, headers=hdr("Madhavan", "admin")).json()["status"] == "closed"
+    assert client.post(f"/api/issues/{k}/transition", json={"to": "closed"}, headers=hdr("Owner", "admin")).json()["status"] == "closed"
 
 
 def test_upload_then_attach_only_known_ids(client):

@@ -1,6 +1,6 @@
-# Software Factory Methodology — extracted from `theta-people-new`
+# Software Factory Methodology — extracted from the source product
 
-**Source repo:** `/Users/Madhavan/Projects/ThetaDirect/hrapp/theta-people-new` (Theta People HRMS v3.0)
+**Source:** a production HR management system (v3.0), the first product built with this methodology
 **Evidence window:** 2026-07-08 → 2026-09-23, 524 commits, 419 issue-log entries, 167 PRD sections
 **Extracted:** 2026-09-23 from `CLAUDE.md`, `.claude/` (skills, agents, hooks, settings), `docs/`, `issues/`, `tools/`, the project's Claude memory and 40 session transcripts.
 
