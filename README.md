@@ -1,8 +1,9 @@
 # softfactory
 
-A reusable software factory for Claude Code: the skills, agents, hooks, templates and a
-lean issue tracker that turn a **product summary** into a repo that runs the
-**setup → develop → deploy → maintain** loop with a documents-as-ledger discipline.
+A spec-first development framework for Claude Code: the skills, agents, hooks,
+templates and a lean issue tracker that turn a **product summary** into a repo that
+runs the **setup → develop → deploy → maintain** loop with a documents-as-ledger
+discipline.
 
 Extracted from a production project (see `METHODOLOGY_BRIEF.md` for the methodology
 and the evidence behind it) and generalized: every project-specific value lives in one
@@ -42,7 +43,7 @@ claude          # then:  /setup-project <the product summary, or a path to it>
 `install.sh` copies the factory-owned files (`.claude/skills`, `.claude/agents`,
 `.claude/hooks`, `tools/`, `issues/`, `templates/`) and writes the project-owned ones
 once (`factory.yaml`, `CLAUDE.md`, `docs/*`). Re-run with `--update` to refresh the
-factory without touching your ledger. `/setup-project` then fills the manifest and the
+framework without touching your ledger. `/setup-project` then fills the manifest and the
 ledger from the summary, proves the verify and deploy gates, and starts the tracker.
 
 ## What is in here
@@ -63,7 +64,7 @@ ledger from the summary, proves the verify and deploy gates, and starts the trac
 | `templates/` | CLAUDE.md, the docs ledger, CI workflow, classified JSON — filled by `/setup-project` | project |
 | `deploy/docker-compose.issues.yml` | Two boards from one image, for internal deployments | project |
 
-## The rules the factory enforces
+## The rules the framework enforces
 
 1. **The ledger is the product's memory.** PRD, plan, issues log, feature list, release log. Work not recorded there did not happen.
 2. **Every phase has a gate; the test is the definition of done; RED first.**
@@ -79,7 +80,7 @@ ledger from the summary, proves the verify and deploy gates, and starts the trac
 12. **Real dates from the shell**; the app clock and the doc clock are never mixed.
 13. **Write down the why**, tersely, everywhere.
 
-## Developing the factory itself
+## Developing the framework itself
 
 ```bash
 python3 -m pytest issues/tests -q            # the tracker's state machine
