@@ -31,6 +31,7 @@ docs:                                     # all relative to the repo root; these
   test_plan_human: docs/TEST_PLAN_HUMAN.md
   release_log: docs/RELEASE_LOG.md
   seeding: docs/SEEDING.md
+  marketing_site: site/index.html          # written by /marketing-site
 
 commands:                                 # run from the repo root; empty = that layer does not exist
   run_dev: npm run dev
@@ -88,6 +89,17 @@ issues:                                   # the standalone tracker (issues/app.p
 release:
   version_cmd: node tools/version.mjs     # prints the version string to stamp; blank = read version_file
   changelog: docs/RELEASE_LOG.md
+
+marketing:                                # the brief /marketing-site reads; it asks for blanks and writes the answers back
+  audience: ""                            # who the page is for, e.g. "operations leads at 50-500 person firms"
+  headline: ""                            # the product's own line; one word in *asterisks* is set in italics
+  primary_cta: ""                         # label, e.g. "Book a demo"
+  primary_href: ""
+  secondary_cta: ""                       # e.g. "See it in action"
+  secondary_href: ""
+  reference_url: ""                       # optional: a site whose section order to mirror
+  contact: ""                             # blank = a flagged placeholder address
+  artifact_url: ""                        # set on first publish; every regeneration republishes here
 
 screenshots:                              # the local stack /guide-screenshots drives (tools/screenshots/stack.sh)
   seed: cd backend && POSTGRES_DB=acme_test PYTHONPATH=. .venv/bin/python -m seed.seed     # fresh test seed; blank = none

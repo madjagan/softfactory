@@ -30,6 +30,7 @@ manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
            /test-guide        a one-page customer tester's guide for one module / feature / use case, labels verified in the source
            /guide-screenshots annotated screenshot storyboard for a guide (ring + pointer + caption), narrated videos on request
            /issues-dashboard  classify the issues log → Issue Ledger page at a stable URL
+           /marketing-site    the product's home page, derived from the ledger and the design system, at a stable URL
            docs-agent          answers "what does the product do"; owns and reconciles the per-persona user guides
            evaluator-assistant sits beside a human tester: expected behaviour, defect / by design / not built / UX finding
 ```
@@ -55,7 +56,7 @@ framework without touching your ledger. `/product-interview` writes the product 
 | Path | What | Owner after install |
 |---|---|---|
 | `factory.example.yaml` | The manifest: name, stack, doc paths, commands per layer, personas, seed facts, tracker settings | project |
-| `.claude/skills/*` | Twelve gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
+| `.claude/skills/*` | Thirteen gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
 | `tools/screenshots/` | Storyboard capture for tester guides: `stack.sh` (fresh stack from the manifest), `lib.mjs` (ring + pointer + caption, shoot-then-click), `capture.mjs`, `build_videos.py`; `app.config.mjs` and `storyboards/` are the project's | factory + project |
 | `.claude/agents/docs-agent.md` | Documentation authority; derives and reconciles user guides | factory |
 | `.claude/agents/evaluator-assistant.md` | Assistant to a non-developer tester | factory |

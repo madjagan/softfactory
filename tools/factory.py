@@ -36,6 +36,7 @@ DEFAULT_DOCS = {
     "test_plan_human": "docs/TEST_PLAN_HUMAN.md",
     "release_log": "docs/RELEASE_LOG.md",
     "seeding": "docs/SEEDING.md",
+    "marketing_site": "site/index.html",
 }
 
 
