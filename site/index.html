@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- page:start -->
+<title>softfactory</title>
+<meta name="description" content="A spec-first framework for Claude Code: dated requirements, failing tests first, gated delivery and a ledger that remembers every decision.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a blueprint ledger. Navy structures, signal green for every action, RED only where a test fails first. */
+:root {
+  --paper: #f4f6fa;
+  --surface: #ffffff;
+  --sunken: #e9edf4;
+  --ink: #15213b;
+  --text: #1f2a40;
+  --muted: #5b6579;
+  --line: #d6dce8;
+  --action: #0a7553;
+  --action-ink: #ffffff;
+  --action-soft: #dcefe7;
+  --red: #c8352e;
+  --red-soft: #f8e1df;
+  --term-bg: #121b2f;
+  --term-fg: #d8e0ee;
+  --term-dim: #8592ab;
+  --term-green: #5fd3a2;
+  --term-red: #ff7b70;
+  --term-key: #9fb8ff;
+  --grid: rgba(21, 33, 59, 0.05);
+  --display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --gutter: clamp(16px, 4vw, 40px);
+  --max: 1160px;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0c1322; --surface: #131c30; --sunken: #0f1729; --ink: #e8edf7; --text: #d3dbea;
+    --muted: #93a0b8; --line: #26324a; --action: #3fcf9b; --action-ink: #062518; --action-soft: #12352b;
+    --red: #ff7b70; --red-soft: #3a1c1c; --term-bg: #080e1a; --term-fg: #d8e0ee; --term-dim: #7d8aa3;
+    --term-green: #5fd3a2; --term-red: #ff7b70; --term-key: #9fb8ff; --grid: rgba(232, 237, 247, 0.04);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0c1322; --surface: #131c30; --sunken: #0f1729; --ink: #e8edf7; --text: #d3dbea;
+  --muted: #93a0b8; --line: #26324a; --action: #3fcf9b; --action-ink: #062518; --action-soft: #12352b;
+  --red: #ff7b70; --red-soft: #3a1c1c; --term-bg: #080e1a; --term-fg: #d8e0ee; --term-dim: #7d8aa3;
+  --term-green: #5fd3a2; --term-red: #ff7b70; --term-key: #9fb8ff; --grid: rgba(232, 237, 247, 0.04);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--text);
+  font: 400 16px/1.6 var(--body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+a { color: var(--action); }
+a:focus-visible, button:focus-visible, [role="tab"]:focus-visible {
+  outline: 2px solid var(--action); outline-offset: 3px; border-radius: 4px;
+}
+h1, h2, h3 { font-family: var(--display); color: var(--ink); font-weight: 500; text-wrap: balance; margin: 0; }
+h1 em, h2 em { font-style: italic; color: var(--action); }
+p { margin: 0; }
+.n, code, kbd { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+code { font-size: 0.88em; background: var(--sunken); padding: 0.1em 0.35em; border-radius: 4px; color: var(--ink); }
+
+.wrap { max-width: var(--max); margin: 0 auto; padding-inline: var(--gutter); }
+section { padding-block: clamp(56px, 8vw, 96px); }
+.eyebrow {
+  font: 500 12px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 14px;
+}
+.lede { font-size: 1.08rem; color: var(--muted); max-width: 62ch; }
+.section-head { display: grid; gap: 14px; margin-bottom: clamp(28px, 4vw, 44px); max-width: 760px; }
+.section-head h2 { font-size: clamp(1.9rem, 3.6vw, 2.7rem); line-height: 1.12; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font: 600 15px/1 var(--body); text-decoration: none; cursor: pointer;
+  padding: 13px 20px; border-radius: 8px; border: 1px solid transparent; white-space: nowrap;
+}
+.btn-primary { background: var(--action); color: var(--action-ink); }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--ink); }
+.btn-sm { padding: 9px 14px; font-size: 14px; }
+
+/* nav */
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.nav .wrap { display: flex; align-items: center; gap: 24px; min-height: 62px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font: 600 17px/1 var(--mono); letter-spacing: -0.01em; }
+.brand-mark { width: 22px; height: 22px; flex: none; }
+.nav-links { display: flex; gap: 22px; margin-right: auto; }
+.nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; }
+.nav-links a:hover { color: var(--ink); }
+.nav-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.theme-toggle {
+  width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); background: transparent;
+  color: var(--muted); cursor: pointer; display: grid; place-items: center;
+}
+.theme-toggle:hover { color: var(--ink); border-color: var(--ink); }
+@media (max-width: 860px) { .nav-links { display: none; } }
+@media (max-width: 480px) { .nav .btn-ghost { display: none; } }
+
+/* hero */
+.hero {
+  padding-block: clamp(48px, 7vw, 88px) clamp(56px, 8vw, 96px);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+  border-bottom: 1px solid var(--line);
+}
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: clamp(32px, 5vw, 64px); align-items: center; }
+@media (max-width: 940px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); } }
+.hero h1 { font-size: clamp(2.7rem, 6.4vw, 4.6rem); line-height: 1.02; letter-spacing: -0.015em; margin-bottom: 22px; }
+.hero .lede { font-size: clamp(1.05rem, 1.6vw, 1.2rem); margin-bottom: 30px; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.hero-note { margin-top: 22px; font-size: 13px; color: var(--muted); }
+
+/* terminal */
+.term {
+  background: var(--term-bg); color: var(--term-fg); border-radius: var(--radius);
+  box-shadow: 0 24px 60px -28px rgba(10, 18, 35, 0.55); overflow: hidden; min-width: 0;
+}
+.term-bar {
+  display: flex; align-items: center; gap: 12px; padding: 11px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.07); font: 500 12px/1 var(--mono); color: var(--term-dim);
+}
+.term-dots { display: flex; gap: 6px; }
+.term-dots span { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.14); }
+.term-title { margin-right: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.replay {
+  font: 500 12px/1 var(--mono); color: var(--term-fg); background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 6px 10px; cursor: pointer;
+}
+.replay:hover { background: rgba(255,255,255,0.13); }
+.term-body { overflow-x: auto; padding: 16px 18px 18px; }
+.term ol { list-style: none; margin: 0; padding: 0; font: 400 13px/1.75 var(--mono); min-width: 520px; }
+.term li { display: grid; grid-template-columns: 18px 112px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; transition: opacity .25s ease; }
+.term li.cmd { grid-template-columns: minmax(0, 1fr); color: #fff; margin-bottom: 6px; }
+.term li.cmd::before { content: "› "; color: var(--term-green); }
+.term .k { color: var(--term-dim); }
+.term .lbl { color: var(--term-key); }
+.term .ok { color: var(--term-green); font-weight: 500; }
+.term .bad { color: var(--term-red); font-weight: 500; }
+.term .dim { color: var(--term-dim); }
+.term.playing li.pending { opacity: 0; }
+.term-foot { padding: 0 18px 14px; font: 400 11px/1.4 var(--mono); color: var(--term-dim); }
+
+/* trust strip */
+.strip { border-bottom: 1px solid var(--line); background: var(--surface); }
+.strip ul {
+  list-style: none; margin: 0 auto; padding: 18px var(--gutter); max-width: var(--max);
+  display: flex; flex-wrap: wrap; gap: 10px 32px; justify-content: space-between;
+  font: 500 13px/1.4 var(--mono); color: var(--muted);
+}
+.strip li { display: flex; align-items: center; gap: 8px; }
+.strip li::before { content: ""; width: 6px; height: 6px; border-radius: 1px; background: var(--action); }
+
+/* lifecycle tabs */
+.tabs { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: clamp(20px, 3vw, 40px); }
+@media (max-width: 820px) { .tabs { grid-template-columns: minmax(0, 1fr); } }
+.tablist { display: flex; flex-direction: column; gap: 4px; border-left: 1px solid var(--line); }
+@media (max-width: 820px) {
+  .tablist { flex-direction: row; overflow-x: auto; border-left: 0; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+}
+[role="tab"] {
+  text-align: left; background: none; border: 0; cursor: pointer; padding: 12px 16px; margin-left: -1px;
+  border-left: 2px solid transparent; color: var(--muted); font: 500 15px/1.3 var(--body);
+  display: flex; gap: 12px; align-items: baseline; white-space: nowrap;
+}
+[role="tab"] .n { font-size: 12px; color: var(--muted); }
+[role="tab"][aria-selected="true"] { color: var(--ink); border-left-color: var(--action); background: var(--surface); }
+@media (max-width: 820px) {
+  [role="tab"] { border-left: 0; border-bottom: 2px solid transparent; margin: 0 0 -1px; }
+  [role="tab"][aria-selected="true"] { border-bottom-color: var(--action); background: none; }
+}
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(22px, 3vw, 34px); min-width: 0; }
+.panel h3 { font-size: 1.6rem; margin-bottom: 10px; }
+.panel > p { color: var(--muted); max-width: 64ch; margin-bottom: 22px; }
+.skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.skill { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; background: var(--paper); min-width: 0; }
+.skill code { background: none; padding: 0; font-weight: 500; color: var(--action); font-size: 14px; }
+.skill p { font-size: 14px; color: var(--muted); margin-top: 6px; }
+.chain { margin-top: 18px; font: 400 13px/1.7 var(--mono); color: var(--muted); overflow-x: auto; white-space: nowrap; padding-bottom: 4px; }
+.chain b { color: var(--ink); font-weight: 500; }
+
+/* stats */
+.stats { background: var(--term-bg); color: var(--term-fg); --stat-fg: var(--term-fg); --stat-muted: var(--term-dim); }
+.stats .eyebrow { color: var(--stat-muted); }
+.stats h2 { color: var(--stat-fg); font-size: clamp(1.7rem, 3vw, 2.3rem); max-width: 26ch; margin-bottom: clamp(28px, 4vw, 44px); }
+.stats h2 em { color: var(--term-green); }
+.stat-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border-top: 1px solid rgba(255, 255, 255, 0.14); }
+@media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { padding: 22px 18px 6px 0; }
+.stat .n { display: block; font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 500; color: var(--stat-fg); letter-spacing: -0.02em; line-height: 1.1; }
+.stat span:last-child { display: block; margin-top: 6px; font-size: 14px; color: var(--stat-muted); max-width: 22ch; }
+.stats .source { margin-top: 26px; font: 400 12px/1.5 var(--mono); color: var(--stat-muted); }
+
+/* trace slip */
+.trace { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(28px, 4vw, 56px); align-items: start; }
+@media (max-width: 900px) { .trace { grid-template-columns: minmax(0, 1fr); } }
+.trace-copy ul { margin: 22px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.trace-copy li { padding-left: 18px; position: relative; color: var(--muted); }
+.trace-copy li::before { content: ""; position: absolute; left: 0; top: 0.7em; width: 8px; height: 1px; background: var(--action); }
+.slip { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; min-width: 0; }
+.slip-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding: 16px 20px; border-bottom: 1px dashed var(--line); }
+.slip-head b { font: 500 15px/1.4 var(--mono); color: var(--ink); }
+.slip-head span { font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.slip-scroll { overflow-x: auto; }
+.slip table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 560px; }
+.slip th { text-align: left; font: 500 11px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 10px 20px; background: var(--sunken); }
+.slip td { padding: 12px 20px; border-top: 1px solid var(--line); vertical-align: top; }
+.slip td:first-child { color: var(--muted); white-space: nowrap; width: 1%; }
+.slip td:nth-child(2) { color: var(--ink); }
+.slip td:last-child { font: 400 12px/1.5 var(--mono); color: var(--muted); width: 34%; }
+.pill { display: inline-block; font: 500 11px/1 var(--mono); padding: 4px 7px; border-radius: 4px; vertical-align: 1px; }
+.pill.red { background: var(--red-soft); color: var(--red); }
+.pill.green { background: var(--action-soft); color: var(--action); }
+.slip-foot { padding: 12px 20px; font: 400 12px/1.5 var(--mono); color: var(--muted); border-top: 1px dashed var(--line); }
+
+/* agents */
+.agents-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(24px, 4vw, 48px); align-items: start; }
+@media (max-width: 940px) { .agents-layout { grid-template-columns: minmax(0, 1fr); } }
+.agent-list { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.agent { padding: 18px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; }
+@media (max-width: 520px) { .agent { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+.agent h3 { font: 600 15px/1.4 var(--body); color: var(--ink); }
+.agent p { font-size: 14.5px; color: var(--muted); }
+.agent p strong { color: var(--ink); font-weight: 500; }
+.rule {
+  margin-top: 24px; padding: 16px 18px; border-radius: 8px; background: var(--action-soft);
+  color: var(--ink); font-size: 15px;
+}
+.rule b { font-family: var(--display); font-size: 1.2rem; font-weight: 500; font-style: italic; display: block; margin-bottom: 2px; }
+.term.run li { grid-template-columns: 128px minmax(0, 1fr); }
+.term.run li.say { color: #fff; }
+.term.run li.gap { height: 8px; }
+
+/* manifest */
+.manifest { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(24px, 4vw, 48px); align-items: start; }
+@media (max-width: 900px) { .manifest { grid-template-columns: minmax(0, 1fr); } }
+.yaml { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; overflow: hidden; }
+.yaml-head { padding: 10px 16px; border-bottom: 1px solid var(--line); font: 500 12px/1.4 var(--mono); color: var(--muted); display: flex; justify-content: space-between; gap: 10px; }
+.yaml pre { margin: 0; padding: 16px 18px; overflow-x: auto; font: 400 13px/1.7 var(--mono); color: var(--text); }
+.yaml .y-k { color: var(--ink); font-weight: 500; }
+.yaml .y-c { color: var(--muted); }
+.yaml .y-s { color: var(--action); }
+.reads { display: grid; gap: 14px; }
+.read { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; }
+.read .n { font-size: 13px; color: var(--action); border: 1px solid var(--line); border-radius: 6px; text-align: center; padding: 4px 0; }
+.read h3 { font: 600 15px/1.4 var(--body); color: var(--ink); }
+.read p { font-size: 14.5px; color: var(--muted); }
+
+/* modules */
+.mod-groups { display: grid; gap: clamp(28px, 4vw, 40px); }
+.mod-group h3 { font: 500 12px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.mods { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.mod { background: var(--surface); padding: 18px 18px 20px; min-width: 0; }
+.mod b { display: block; font: 500 14px/1.4 var(--mono); color: var(--ink); margin-bottom: 6px; }
+.mod p { font-size: 14px; color: var(--muted); }
+
+/* boards */
+.boards { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.boards table { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 14px; }
+.boards th, .boards td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.boards thead th { font: 600 14px/1.3 var(--body); color: var(--ink); background: var(--sunken); }
+.boards thead th small { display: block; font: 400 12px/1.4 var(--mono); color: var(--muted); margin-top: 4px; }
+.boards tbody th { font-weight: 500; color: var(--text); width: 24%; }
+.boards tbody tr:last-child th, .boards tbody tr:last-child td { border-bottom: 0; }
+.yes, .no { font: 500 13px/1.4 var(--mono); }
+.yes { color: var(--action); }
+.no { color: var(--muted); }
+.boards-note { margin-top: 16px; font-size: 14px; color: var(--muted); max-width: 70ch; }
+
+/* faq */
+.faq { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); gap: clamp(24px, 4vw, 56px); }
+@media (max-width: 860px) { .faq { grid-template-columns: minmax(0, 1fr); } }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq details:first-child { border-top: 1px solid var(--line); }
+.faq summary {
+  cursor: pointer; list-style: none; padding: 18px 36px 18px 0; position: relative;
+  font: 500 16px/1.45 var(--body); color: var(--ink);
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; position: absolute; right: 4px; top: 16px; font: 400 20px/1 var(--mono); color: var(--action); }
+.faq details[open] summary::after { content: "−"; }
+.faq details p { padding: 0 0 20px; color: var(--muted); max-width: 66ch; }
+
+/* install band */
+.install { background: var(--action-soft); border-block: 1px solid var(--line); }
+.install .wrap { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(24px, 4vw, 56px); align-items: center; }
+@media (max-width: 900px) { .install .wrap { grid-template-columns: minmax(0, 1fr); } }
+.install h2 { font-size: clamp(1.9rem, 3.6vw, 2.7rem); margin-bottom: 14px; }
+.install .lede { margin-bottom: 24px; }
+.cmd-box { background: var(--term-bg); border-radius: var(--radius); overflow: hidden; min-width: 0; }
+.cmd-box pre { margin: 0; padding: 18px 20px; overflow-x: auto; font: 400 13.5px/1.8 var(--mono); color: var(--term-fg); }
+.cmd-box .c { color: var(--term-dim); }
+.cmd-box .p { color: var(--term-green); }
+.cmd-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); font: 500 12px/1 var(--mono); color: var(--term-dim); }
+.copied { color: var(--term-green); }
+
+/* footer */
+footer { padding-block: 56px 40px; background: var(--surface); border-top: 1px solid var(--line); }
+.foot-grid { display: grid; grid-template-columns: 1.4fr repeat(4, minmax(0, 1fr)); gap: 32px; }
+@media (max-width: 900px) { .foot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .foot-about { grid-column: 1 / -1; } }
+.foot-about p { color: var(--muted); font-size: 14px; margin-top: 12px; max-width: 34ch; }
+footer h4 { margin: 0 0 12px; font: 500 12px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 14px; }
+footer ul a { color: var(--text); text-decoration: none; }
+footer ul a:hover { color: var(--action); }
+.contact { font-family: var(--mono); font-size: 13px; color: var(--text); user-select: all; word-break: break-all; }
+.foot-base { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; font: 400 12px/1.5 var(--mono); color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="softfactory home">
+      <svg class="brand-mark" viewBox="0 0 22 22" aria-hidden="true">
+        <rect x="1" y="1" width="20" height="20" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M6 15.5h10M6 11h10M6 6.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="15.5" cy="6.5" r="2" fill="var(--action)"/>
+      </svg>
+      softfactory
+    </a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#loop">The loop</a>
+      <a href="#trace">The ledger</a>
+      <a href="#agents">Agents</a>
+      <a href="#boards">Boards</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch colour theme">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 0 13z" fill="currentColor"/><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+      </button>
+      <a class="btn btn-ghost btn-sm" href="https://github.com/madjagan/softfactory/blob/main/METHODOLOGY_BRIEF.md">Read the methodology</a>
+      <a class="btn btn-primary btn-sm" href="#install">Install</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">A spec-first framework for Claude Code</p>
+      <h1 id="hero-title">Software, built to <em>spec</em>.</h1>
+      <p class="lede">softfactory turns a product summary into a repo that runs as one gated loop. Requirements are dated, every change starts with a failing test, nothing ships until the gates are green, and a ledger records every decision. Agents work the queues. People make the calls.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#install">Install</a>
+        <a class="btn btn-ghost" href="#agents">See it in action</a>
+      </div>
+      <p class="hero-note">Twelve gated skills, five agents, an issue tracker, customer boards, a support desk and an ideas portal. One manifest configures them all.</p>
+    </div>
+
+    <div class="term" id="hero-term" aria-label="Example /create-feature run">
+      <div class="term-bar">
+        <div class="term-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+        <span class="term-title">claude · acme-ledger</span>
+        <button class="replay" type="button" data-replay="hero-term">Replay</button>
+      </div>
+      <div class="term-body">
+        <ol>
+          <li class="cmd">/create-feature Export the issues log as CSV</li>
+          <li><span class="k n">1</span><span class="lbl">Requirement</span><span>PRD §3.14 added, dated <span class="n">2026-10-19</span>, <span class="n">4</span> acceptance criteria</span><span class="dim">gate ✓</span></li>
+          <li><span class="k n">2</span><span class="lbl">Acceptance</span><span>tests/test_export.py · <span class="n">4</span> failed</span><span class="bad">RED</span></li>
+          <li><span class="k n">3</span><span class="lbl">Risk review</span><span>routes, stores, seed checked · plan row In progress</span><span class="dim">gate ✓</span></li>
+          <li><span class="k n">4</span><span class="lbl">Implement</span><span>tools/export.py · routes/export.py</span><span class="dim">done</span></li>
+          <li><span class="k n">5</span><span class="lbl">Verify</span><span>tests/test_export.py · <span class="n">4</span> passed · full verify gate passed · real flow driven</span><span class="ok">GREEN</span></li>
+          <li><span class="k n">6</span><span class="lbl">Complete</span><span>PRD §3.14 ✅ · plan ✅ · issues log entry written</span><span class="ok">logged</span></li>
+        </ol>
+      </div>
+      <p class="term-foot">Example run. Six phases, each ending in a gate the skill cannot skip.</p>
+    </div>
+  </div>
+</section>
+
+<div class="strip">
+  <ul>
+    <li>Runs inside Claude Code</li>
+    <li>Any stack, set in factory.yaml</li>
+    <li>Tools in Python, FastAPI and SQLite</li>
+    <li>Installs into any repo with one script</li>
+    <li>Updates never touch your docs</li>
+  </ul>
+</div>
+
+<section id="loop" aria-labelledby="loop-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">One loop for the whole lifecycle</p>
+      <h2 id="loop-title">From the first interview to the <em>thousandth</em> fix.</h2>
+      <p class="lede">Each stage is a skill with the same shape: a prime directive, phases that end in gates, a definition of done and a list of anti-patterns. The stages hand off through the ledger, so nothing depends on anyone remembering.</p>
+    </div>
+
+    <div class="tabs">
+      <div class="tablist" role="tablist" aria-label="Lifecycle stages">
+        <button role="tab" id="tab-discover" aria-controls="panel-discover" aria-selected="true"><span class="n">01</span>Discover</button>
+        <button role="tab" id="tab-setup" aria-controls="panel-setup" aria-selected="false" tabindex="-1"><span class="n">02</span>Set up</button>
+        <button role="tab" id="tab-develop" aria-controls="panel-develop" aria-selected="false" tabindex="-1"><span class="n">03</span>Develop</button>
+        <button role="tab" id="tab-deploy" aria-controls="panel-deploy" aria-selected="false" tabindex="-1"><span class="n">04</span>Deploy</button>
+        <button role="tab" id="tab-maintain" aria-controls="panel-maintain" aria-selected="false" tabindex="-1"><span class="n">05</span>Maintain</button>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-discover" aria-labelledby="tab-discover">
+        <h3>Know who it is for before you write a line</h3>
+        <p>A command-line interview with the product owner. It pushes back on vague answers, plays every section back for confirmation and resumes where it stopped.</p>
+        <div class="skills">
+          <div class="skill"><code>/product-interview</code><p>Personas, a value proposition canvas per primary persona (jobs, pains, gains and the fit), component tools, alternatives, 3-month success metrics, stack and deploy.</p></div>
+        </div>
+        <p class="chain">writes <b>docs/PRODUCT_SUMMARY.md</b> → read by <b>/setup-project</b></p>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-setup" aria-labelledby="tab-setup" hidden>
+        <h3>A repo that knows how to run itself</h3>
+        <p>The summary becomes the manifest and the ledger. The verify and deploy gates are proven before the first feature, and the issue tracker starts. Re-run it any time to fill gaps.</p>
+        <div class="skills">
+          <div class="skill"><code>/setup-project</code><p>Writes factory.yaml, the PRD skeleton with its first dated sections, the implementation plan with test gates, the issues log, the feature list, the human test plan, the testing companion and CLAUDE.md house rules.</p></div>
+        </div>
+        <p class="chain"><b>PRODUCT_SUMMARY.md</b> → factory.yaml · PRD · plan · issues log · feature list · test plan · tracker · <b>gates proven</b></p>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-develop" aria-labelledby="tab-develop" hidden>
+        <h3>Every change starts red and ends green</h3>
+        <p>Features, fixes and investigations each have their own pipeline. A test that passed before the change proves nothing, so the acceptance test must fail first.</p>
+        <div class="skills">
+          <div class="skill"><code>/create-feature</code><p>Dated requirement, failing acceptance test, risk review, build, then green tests, the full gate and the real flow. Changes to existing behaviour become dated amendments.</p></div>
+          <div class="skill"><code>/fix-issue</code><p>Describe, reproduce, root cause to file:line, minimal fix, a regression test that would have failed before, no regressions, then the log entry.</p></div>
+          <div class="skill"><code>/find-issues</code><p>Hunches become hypotheses to falsify. Layered tests with teeth give a verdict per case. It finds and proves defects and never fixes them.</p></div>
+        </div>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-deploy" aria-labelledby="tab-deploy" hidden>
+        <h3>Ships only when every gate is green</h3>
+        <p>The release skill confirms the tree is what you think it is, runs the full gate, deploys, smoke-tests the live instance and writes down exactly what shipped. Any red gate stops it.</p>
+        <div class="skills">
+          <div class="skill"><code>/release</code><p>Smoke checks for health, asset type, version stamp and login. The release log lists the issues-log entries and PRD sections since the last release, and the tracker keys testers can now verify.</p></div>
+        </div>
+        <p class="chain">tree identified → <b>every gate green</b> → deploy → smoke → <b>RELEASE_LOG.md</b></p>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-maintain" aria-labelledby="tab-maintain" hidden>
+        <h3>Listen to testers and customers, and keep the docs true</h3>
+        <p>Reports, tickets and ideas each have an agent that works the queue in its own context. Test material and user guides are regenerated from the feature list, never edited by hand.</p>
+        <div class="skills">
+          <div class="skill"><code>/address-feedback</code><p>Clarify, classify from evidence against the written requirement, dispatch exactly one skill, close the register honestly.</p></div>
+          <div class="skill"><code>/process-issues</code><p>Launches the Issue Agent on the tracker queue. Verdicts come back with human test steps.</p></div>
+          <div class="skill"><code>/process-tickets</code><p>Launches the Support Agent. It drafts replies from the docs; a person sends them.</p></div>
+          <div class="skill"><code>/process-ideas</code><p>Launches the Ideas Agent. Requests from every source become one idea with its demand.</p></div>
+          <div class="skill"><code>/test-pack</code><p>Human test plan, exploratory charters and a coaching pack per module.</p></div>
+          <div class="skill"><code>/test-guide</code><p>A one-page tester's guide with control labels checked against the source.</p></div>
+          <div class="skill"><code>/guide-screenshots</code><p>An annotated screenshot storyboard for a guide, and narrated videos on request.</p></div>
+          <div class="skill"><code>/issues-dashboard</code><p>Classifies the issues log into the Issue Ledger page, at a link that never changes.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="stats" aria-labelledby="stats-title">
+  <div class="wrap">
+    <p class="eyebrow">Extracted from production</p>
+    <h2 id="stats-title">Built from eleven weeks of shipping a real HR system <em>this way</em>.</h2>
+    <div class="stat-grid">
+      <div class="stat"><span class="n">524</span><span>commits in the evidence window</span></div>
+      <div class="stat"><span class="n">167</span><span>dated PRD sections</span></div>
+      <div class="stat"><span class="n">419</span><span>issues-log entries, each with its root cause</span></div>
+      <div class="stat"><span class="n">~5,000</span><span>automated tests across frontend, backend and end-to-end</span></div>
+      <div class="stat"><span class="n">321</span><span>tests that pinned a known defect until it was fixed</span></div>
+    </div>
+    <p class="source">Source: METHODOLOGY_BRIEF.md · evidence window 2026-07-08 → 2026-09-23</p>
+  </div>
+</section>
+
+<section id="trace" aria-labelledby="trace-title">
+  <div class="wrap trace">
+    <div class="trace-copy">
+      <p class="eyebrow">The ledger</p>
+      <h2 id="trace-title" style="font-size: clamp(1.9rem, 3.6vw, 2.7rem); line-height: 1.12;">One requirement, <em>traced</em> end to end.</h2>
+      <p class="lede" style="margin-top: 14px;">Every line of the ledger says where it came from. A requirement points to its test, the test to its log entry, the feature to its guide. When two documents disagree, the source wins and the derived one is regenerated.</p>
+      <ul>
+        <li>Requirements change by dated amendment, never a silent rewrite.</li>
+        <li>A section is complete only when its named test file passes in the gate.</li>
+        <li>User guides are derived from the feature list. A hook notices the change and the docs agent reconciles them.</li>
+        <li>Real dates come from the shell, never a guess.</li>
+      </ul>
+    </div>
+
+    <div class="slip">
+      <div class="slip-head">
+        <b>§3.14 · Export the issues log as CSV</b>
+        <span>Example trace · 2026-10-19</span>
+      </div>
+      <div class="slip-scroll">
+        <table>
+          <thead><tr><th scope="col">Line</th><th scope="col">Entry</th><th scope="col">Written by · file</th></tr></thead>
+          <tbody>
+            <tr><td>Requirement</td><td>User story, <span class="n">4</span> observable acceptance criteria, non-goals</td><td>/create-feature step 1 · PRODUCT_REQUIREMENTS.md</td></tr>
+            <tr><td>Criterion 1</td><td>The export holds every log entry with its date, area and root cause</td><td>PRD §3.14, criterion 1</td></tr>
+            <tr><td>Gate</td><td>tests/test_export.py</td><td>IMPLEMENTATION_PLAN.md · row 3.14</td></tr>
+            <tr><td>First run</td><td><span class="n">4</span> failed, feature absent <span class="pill red">RED</span></td><td>/create-feature step 2</td></tr>
+            <tr><td>Final run</td><td><span class="n">4</span> passed, full verify gate passed <span class="pill green">GREEN</span></td><td>/create-feature step 5 · commands.verify</td></tr>
+            <tr><td>Log</td><td>§3.14 entry with files changed and verification</td><td>/create-feature step 6 · issues_log.md</td></tr>
+            <tr><td>Feature</td><td>EXP-01 ● Live · Req IDs §3.14</td><td>FEATURE_LIST.md</td></tr>
+            <tr><td>Guide</td><td>"Export the issues log", cites EXP-01</td><td>docs-agent · user-guide/admin.md</td></tr>
+            <tr><td>Release</td><td>Shipped §3.14 · testers can verify</td><td>/release · RELEASE_LOG.md</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="slip-foot">Every row is a file in docs/. Work that is not in the ledger did not happen.</p>
+    </div>
+  </div>
+</section>
+
+<section id="agents" aria-labelledby="agents-title" style="background: var(--surface); border-block: 1px solid var(--line);">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Agents</p>
+      <h2 id="agents-title">Agents do the <em>work</em>. People make the decisions.</h2>
+      <p class="lede">Each agent runs in its own context, so screenshots, reproductions and searches never crowd the main session. The server enforces what each one may do.</p>
+    </div>
+
+    <div class="agents-layout">
+      <div>
+        <div class="agent-list">
+          <div class="agent"><h3>Issue Agent</h3><p>Works the tracker queue. Finds the root cause to file:line, writes the fix and its regression test, and returns a verdict with steps for a human to try. <strong>It never verifies or closes.</strong></p></div>
+          <div class="agent"><h3>Support Agent</h3><p>Drafts replies from the user guides, the feature list and the PRD, after checking the customer's release and known issues. <strong>A person sends every reply.</strong></p></div>
+          <div class="agent"><h3>Ideas Agent</h3><p>Links requests from the portal, tickets and issues into one idea, drafts its public version and moves accepted ideas along as the plan and release log change. <strong>The owner accepts or declines.</strong></p></div>
+          <div class="agent"><h3>docs-agent</h3><p>Owns the per-persona user guides. Cites every claim, and reconciles the guides whenever the feature list changes.</p></div>
+          <div class="agent"><h3>evaluator-assistant</h3><p>Sits beside a human tester. Says what a screen should do, and whether what they saw is a defect, by design, not built yet or a UX finding.</p></div>
+        </div>
+        <div class="rule"><b>Agents propose. People decide.</b>Money, statutory and access changes are business decisions and are always confirmed first.</div>
+      </div>
+
+      <div class="term run" id="run-term" aria-label="Replayed Issue Agent run">
+        <div class="term-bar">
+          <div class="term-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          <span class="term-title">issue-agent · own context</span>
+          <button class="replay" type="button" data-replay="run-term">Replay</button>
+        </div>
+        <div class="term-body">
+          <ol>
+            <li class="cmd">/process-issues</li>
+            <li><span class="lbl">list</span><span><span class="n">3</span> new · <span class="n">1</span> open</span></li>
+            <li><span class="lbl">show IS-612</span><span>"Cancel does nothing on the export dialog" · ui · bug</span></li>
+            <li><span class="lbl">shots IS-612</span><span><span class="n">2</span> screenshots downloaded and viewed</span></li>
+            <li class="gap" aria-hidden="true"></li>
+            <li><span class="lbl">/fix-issue</span><span class="dim">reproduce → root cause → fix → test</span></li>
+            <li><span class="lbl">reproduce</span><span>Cancel pressed, dialog stays open, handler is undefined</span></li>
+            <li><span class="lbl">root cause</span><span>src/ExportDialog.jsx:<span class="n">41</span> binds onCancel to a stale prop</span></li>
+            <li><span class="lbl">regression</span><span>ExportDialog.test.jsx <span class="bad">failed before</span> · <span class="ok">passes after</span></span></li>
+            <li><span class="lbl">full suite</span><span class="ok">passed</span></li>
+            <li class="gap" aria-hidden="true"></li>
+            <li><span class="lbl">verdict</span><span>IS-612 new → <span class="ok">fixed</span></span></li>
+            <li><span class="lbl">human test</span><span>Open the export dialog and press Cancel. It closes and nothing is exported.</span></li>
+            <li class="say"><span class="lbl">tester</span><span>IS-612 fixed → verified → closed</span></li>
+          </ol>
+        </div>
+        <p class="term-foot">Example run, replayed. Only the tester can verify and close.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="manifest-title">
+  <div class="wrap manifest">
+    <div class="yaml">
+      <div class="yaml-head"><span>factory.yaml</span><span>excerpt</span></div>
+<pre><span class="y-k">product:</span>
+  <span class="y-k">name:</span> <span class="y-s">Acme Ledger</span>
+<span class="y-k">stack:</span>
+  <span class="y-k">frontend:</span> <span class="y-s">Vite + React</span>
+  <span class="y-k">backend:</span> <span class="y-s">FastAPI + PostgreSQL</span>
+<span class="y-k">commands:</span>
+  <span class="y-k">verify:</span> <span class="y-s">npm run verify</span>      <span class="y-c"># the gate every skill runs</span>
+  <span class="y-k">deploy:</span> <span class="y-s">./deploy/redeploy.sh</span>
+<span class="y-k">docs:</span>
+  <span class="y-k">prd:</span> <span class="y-s">docs/PRODUCT_REQUIREMENTS.md</span>
+  <span class="y-k">feature_list:</span> <span class="y-s">docs/FEATURE_LIST.md</span>
+<span class="y-k">issues:</span>
+  <span class="y-k">prefix:</span> <span class="y-s">IS</span>
+  <span class="y-k">customer_boards:</span>
+    - { <span class="y-k">name:</span> <span class="y-s">acme</span>, <span class="y-k">prefix:</span> <span class="y-s">ACME</span> }
+<span class="y-k">support:</span>
+  <span class="y-k">orgs:</span> [<span class="y-s">acme</span>, <span class="y-s">globex</span>]
+<span class="y-k">ideas:</span>
+  <span class="y-k">prefix:</span> <span class="y-s">IDEA</span></pre>
+    </div>
+    <div>
+      <div class="section-head" style="margin-bottom: 26px;">
+        <p class="eyebrow">Configuration</p>
+        <h2 id="manifest-title">One <em>manifest</em>, read by everything.</h2>
+        <p class="lede">Every project-specific value lives in factory.yaml. Skills, agents, hooks and tools read it instead of hard-coding commands or paths.</p>
+      </div>
+      <div class="reads">
+        <div class="read"><span class="n">1</span><div><h3>Your stack, your commands</h3><p>Unit, backend and end-to-end suites, verify and deploy are whatever you set. Leave a layer empty and the skills skip it.</p></div></div>
+        <div class="read"><span class="n">2</span><div><h3>Your ledger paths</h3><p>Move the PRD or the guides and every skill and hook follows.</p></div></div>
+        <div class="read"><span class="n">3</span><div><h3>Your customers</h3><p>Each early customer's board, and the orgs for support and ideas, are one list each.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="mods-title" style="padding-top: 0;">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Everything in the box</p>
+      <h2 id="mods-title">Skills, agents and the apps they <em>work</em>.</h2>
+    </div>
+    <div class="mod-groups">
+      <div class="mod-group">
+        <h3>Build</h3>
+        <div class="mods">
+          <div class="mod"><b>/product-interview</b><p>Interview that writes the product summary.</p></div>
+          <div class="mod"><b>/setup-project</b><p>Manifest, ledger, house rules, proven gates.</p></div>
+          <div class="mod"><b>/create-feature</b><p>Dated requirement to green, logged feature.</p></div>
+          <div class="mod"><b>/release</b><p>Gated deploy, smoke checks and release log.</p></div>
+        </div>
+      </div>
+      <div class="mod-group">
+        <h3>Prove</h3>
+        <div class="mods">
+          <div class="mod"><b>/fix-issue</b><p>Reproduce, root cause, minimal fix, regression test.</p></div>
+          <div class="mod"><b>/find-issues</b><p>Hypotheses, layered tests and a verdict per case.</p></div>
+          <div class="mod"><b>/test-pack</b><p>Human test plan, charters and coaching packs.</p></div>
+          <div class="mod"><b>/test-guide</b><p>One-page guide for a non-developer tester.</p></div>
+          <div class="mod"><b>/guide-screenshots</b><p>Annotated storyboards and narrated videos.</p></div>
+          <div class="mod"><b>Hooks</b><p>Feature-list change detector and stale-citation checker.</p></div>
+        </div>
+      </div>
+      <div class="mod-group">
+        <h3>Listen</h3>
+        <div class="mods">
+          <div class="mod"><b>Issue tracker</b><p>Tester, agent and admin roles with a server-enforced state machine.</p></div>
+          <div class="mod"><b>Customer boards</b><p>One per early customer, status only, triaged into shared internal issues.</p></div>
+          <div class="mod"><b>Support desk</b><p>Web form and in-app widget. Agent drafts, support sends, defects escalate.</p></div>
+          <div class="mod"><b>Ideas portal</b><p>Private submissions, curated public ideas, votes and demand.</p></div>
+          <div class="mod"><b>/address-feedback</b><p>One report, one class, one skill.</p></div>
+          <div class="mod"><b>/issues-dashboard</b><p>The classified Issue Ledger at a stable link.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="boards" aria-labelledby="boards-title" style="background: var(--surface); border-block: 1px solid var(--line);">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Who sees what</p>
+      <h2 id="boards-title">A separate board for <em>each</em> audience.</h2>
+      <p class="lede">Engineers see everything. Each customer sees only their own reports, in plain words, after a person has checked them.</p>
+    </div>
+    <div class="boards">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><span class="visually-hidden">What</span></th>
+            <th scope="col">Internal board<small>engineering team · IS-</small></th>
+            <th scope="col">Customer board<small>one per early customer · ACME-</small></th>
+            <th scope="col">Support desk<small>customers in production · SUP-</small></th>
+            <th scope="col">Ideas portal<small>customers · IDEA-</small></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Their own reports</th><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td></tr>
+          <tr><th scope="row">Other customers' reports</th><td class="yes">yes, linked</td><td class="no">never</td><td class="no">never</td><td class="no">curated version only</td></tr>
+          <tr><th scope="row">Root cause and fix</th><td class="yes">yes</td><td class="no">never</td><td class="no">never</td><td class="no">never</td></tr>
+          <tr><th scope="row">Verdict</th><td class="yes">as soon as written</td><td class="yes">after internal Verified</td><td class="yes">sent by support</td><td class="yes">status in plain words</td></tr>
+          <tr><th scope="row">Separation</th><td>full analysis</td><td>own deployment and database</td><td>filtered by org on the server</td><td>filtered by org on the server</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="boards-note">Reports of the same defect from several customers become one internal issue. When a tester verifies the fix, each customer hears about it on their own board.</p>
+  </div>
+</section>
+
+<section id="faq" aria-labelledby="faq-title">
+  <div class="wrap faq">
+    <div class="section-head">
+      <p class="eyebrow">FAQ</p>
+      <h2 id="faq-title">Questions before you <em>install</em>.</h2>
+    </div>
+    <div>
+      <details open>
+        <summary>What do I need to run it?</summary>
+        <p>Claude Code, git and Python 3. The tracker, customer boards, support desk and ideas portal are small FastAPI apps with a SQLite file each, installed alongside the skills.</p>
+      </details>
+      <details>
+        <summary>Does it work with my stack?</summary>
+        <p>Yes. The skills read your commands from factory.yaml: the unit, backend and end-to-end suites, the verify gate and the deploy command. A layer you leave empty is skipped.</p>
+      </details>
+      <details>
+        <summary>Can I add it to a repo I already have?</summary>
+        <p>Yes. Run install.sh on the repo, then /setup-project with a summary of what the product already does. Running install.sh with --update later refreshes the framework without touching your docs.</p>
+      </details>
+      <details>
+        <summary>What will Claude do without asking?</summary>
+        <p>It writes tests, fixes and drafts through the gated skills. It never verifies or closes an issue, never sends anything to a customer, never commits unless asked, and confirms money, statutory and access changes first.</p>
+      </details>
+      <details>
+        <summary>How are customers kept apart?</summary>
+        <p>Each early customer has their own board and database. The support desk and ideas portal filter every request by organisation on the server. Notes sent to customers never name another customer or an internal key.</p>
+      </details>
+      <details>
+        <summary>Why must the first test fail?</summary>
+        <p>A test that already passes before the change proves nothing about the change. Starting red shows the test can see the feature is missing; ending green shows it is there.</p>
+      </details>
+      <details>
+        <summary>Where did the method come from?</summary>
+        <p>It was extracted from a production HR system built this way over eleven weeks. The methodology and the evidence behind it are in METHODOLOGY_BRIEF.md.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="install" id="install" aria-labelledby="install-title">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Install</p>
+      <h2 id="install-title">Two commands, then <em>interview</em>.</h2>
+      <p class="lede">Install copies the skills, agents, hooks, tools and apps, and writes your ledger once. Then start Claude Code and run the interview.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/madjagan/softfactory">View on GitHub</a>
+        <a class="btn btn-ghost" href="https://github.com/madjagan/softfactory/blob/main/README.md">Read the README</a>
+      </div>
+    </div>
+    <div class="cmd-box">
+      <div class="cmd-bar"><span>terminal</span><button class="replay" type="button" id="copy-install">Copy</button></div>
+<pre id="install-cmds"><span class="c"># get the framework and install it into your repo</span>
+<span class="p">$</span> git clone https://github.com/madjagan/softfactory.git
+<span class="p">$</span> ./softfactory/install.sh /path/to/your/repo
+
+<span class="c"># then, inside Claude Code in that repo</span>
+<span class="p">$</span> cd /path/to/your/repo &amp;&amp; claude
+<span class="p">›</span> /product-interview
+<span class="p">›</span> /setup-project</pre>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-about">
+        <a class="brand" href="#top">
+          <svg class="brand-mark" viewBox="0 0 22 22" aria-hidden="true">
+            <rect x="1" y="1" width="20" height="20" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M6 15.5h10M6 11h10M6 6.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="15.5" cy="6.5" r="2" fill="var(--action)"/>
+          </svg>
+          softfactory
+        </a>
+        <p>A spec-first framework for Claude Code. Dated requirements, red-first tests, gated releases and a ledger that remembers.</p>
+      </div>
+      <div>
+        <h4>Framework</h4>
+        <ul>
+          <li><a href="#loop">The loop</a></li>
+          <li><a href="#trace">The ledger</a></li>
+          <li><a href="#boards">Boards</a></li>
+          <li><a href="#install">Install</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Skills</h4>
+        <ul>
+          <li><a href="#loop">/create-feature</a></li>
+          <li><a href="#loop">/fix-issue</a></li>
+          <li><a href="#loop">/find-issues</a></li>
+          <li><a href="#loop">/release</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Docs</h4>
+        <ul>
+          <li><a href="https://github.com/madjagan/softfactory/blob/main/README.md">README</a></li>
+          <li><a href="https://github.com/madjagan/softfactory/blob/main/METHODOLOGY_BRIEF.md">Methodology</a></li>
+          <li><a href="https://github.com/madjagan/softfactory/tree/main/docs/specs">Specs</a></li>
+          <li><a href="https://github.com/madjagan/softfactory/blob/main/issues/README.md">Issue tracker</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <ul>
+          <li><a href="https://github.com/madjagan/softfactory">GitHub</a></li>
+          <li><a href="#agents">Agents</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <!-- PLACEHOLDER contact address: replace before publishing -->
+          <li><span class="contact">hello@softfactory.example</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>softfactory</span>
+      <span>Built with softfactory, on Claude Code</span>
+    </div>
+  </div>
+</footer>
+
+<style>.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }</style>
+<script>
+(function () {
+  var root = document.documentElement;
+  try { var saved = localStorage.getItem("sf-theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    var current = root.getAttribute("data-theme") ||
+      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    var next = current === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("sf-theme", next); } catch (e) {}
+  });
+
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  function select(tab) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+    });
+  }
+  tabs.forEach(function (tab, i) {
+    tab.addEventListener("click", function () { select(tab); });
+    tab.addEventListener("keydown", function (e) {
+      var j = null;
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") j = (i + 1) % tabs.length;
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft") j = (i - 1 + tabs.length) % tabs.length;
+      if (e.key === "Home") j = 0;
+      if (e.key === "End") j = tabs.length - 1;
+      if (j !== null) { e.preventDefault(); select(tabs[j]); tabs[j].focus(); }
+    });
+  });
+
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelectorAll("[data-replay]").forEach(function (btn) {
+    var term = document.getElementById(btn.getAttribute("data-replay"));
+    var timers = [];
+    btn.addEventListener("click", function () {
+      if (reduce) return;
+      timers.forEach(clearTimeout); timers = [];
+      var lines = Array.prototype.slice.call(term.querySelectorAll("li"));
+      lines.forEach(function (li) { li.classList.add("pending"); });
+      term.classList.add("playing");
+      lines.forEach(function (li, i) {
+        timers.push(setTimeout(function () {
+          li.classList.remove("pending");
+          if (i === lines.length - 1) term.classList.remove("playing");
+        }, 250 + i * 420));
+      });
+    });
+  });
+
+  var copyBtn = document.getElementById("copy-install");
+  copyBtn.addEventListener("click", function () {
+    var text = document.getElementById("install-cmds").innerText
+      .split("\n").filter(function (l) { return /^\$ /.test(l); })
+      .map(function (l) { return l.slice(2); }).join("\n");
+    function done(label) { copyBtn.textContent = label; setTimeout(function () { copyBtn.textContent = "Copy"; }, 1600); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done("Copied"); }, function () { selectCmds(); done("Selected"); });
+    } else { selectCmds(); done("Selected"); }
+  });
+  function selectCmds() {
+    var range = document.createRange(); range.selectNodeContents(document.getElementById("install-cmds"));
+    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  }
+})();
+</script>
+<!-- page:end -->
+</body>
+</html>
