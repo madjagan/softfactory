@@ -86,20 +86,20 @@ def log_docs(log_path: Path, classified_path: Path) -> list[dict]:
         if cls.get("note") and cls["note"] not in desc:
             desc = (desc + "\n\n" + cls["note"]).strip() if desc else cls["note"]
         at = date + "T00:00:00.000Z"
-        claude = {k: v for k, v in {
+        agent = {k: v for k, v in {
             "rootCause": sec("rootCause"), "fix": sec("fix"), "files": sec("files"),
             "tests": sec("tests") or ("Regression test added" if cls.get("regression_test_added") else ""),
             "humanTests": sec("verification"), "processedAt": at,
         }.items() if v}
         hist = [{"at": at, "by": "import", "from": "", "to": "new", "note": f"Imported from {log_path.name}"},
-                {"at": at, "by": "claude", "from": "new", "to": "fixed" if kind == "bug" else "closed", "note": ""}]
+                {"at": at, "by": "agent", "from": "new", "to": "fixed" if kind == "bug" else "closed", "note": ""}]
         if kind == "bug":
             hist.append({"at": at, "by": "import", "from": "fixed", "to": "closed", "note": "Verified at the time; closed on import"})
         module = cls.get("module") if cls.get("module") in tracker.MODULES else "other"
         out.append({"key": f"{tracker.PREFIX}-{n}", "num": n, "title": clip(title, 200), "description": desc, "module": module,
                     "kind": kind, "severity": "medium" if kind == "bug" else "low", "persona": "", "build": "",
                     "status": "closed", "source": "issues_log", "sourceRef": ref, "reporter": "Issues log",
-                    "createdAt": at, "updatedAt": at, "screenshots": [], "claude": claude, "comments": [], "history": hist})
+                    "createdAt": at, "updatedAt": at, "screenshots": [], "agent": agent, "comments": [], "history": hist})
     return out
 
 

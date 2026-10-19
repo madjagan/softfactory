@@ -1,6 +1,6 @@
 """Software-factory issue tracker — a standalone FastAPI app over SQLite.
 
-Testers file issues (with screenshots) from the static page; Claude works them through
+Testers file issues (with screenshots) from the static page; the Issue Agent works them through
 tools/issues_cli.py and writes verdicts back. One process, one file database, disk uploads.
 Serve at any path prefix: the page uses relative URLs only.
 """
@@ -35,10 +35,10 @@ FIRST_NEW_NUM = int(os.environ.get("ISSUES_FIRST_NUM", "501"))  # room below for
 # brand line and its own key prefix, so FB-501 on that board can never be confused with TP-501 here.
 BRAND = os.environ.get("ISSUES_BRAND", "Issue tracker")
 PREFIX = os.environ.get("ISSUES_PREFIX", "IS")
-# The roles a board ACCEPTS. The customer board sets ISSUES_ROLES=tester,claude so nobody there can
+# The roles a board ACCEPTS. The customer board sets ISSUES_ROLES=tester,agent so nobody there can
 # act as admin (set any status), whatever header a request carries; the page offers only what is
-# listed here, minus claude, which is the CLI's role.
-ALLOWED_ROLES = {r.strip() for r in os.environ.get("ISSUES_ROLES", "tester,claude,admin").split(",") if r.strip()}
+# listed here, minus agent, which is the CLI's role.
+ALLOWED_ROLES = {r.strip() for r in os.environ.get("ISSUES_ROLES", "tester,agent,admin").split(",") if r.strip()}
 # A CUSTOMER board shows status only: the analysis never leaves the server, however it got there.
 CUSTOMER = os.environ.get("ISSUES_CUSTOMER", "") == "1"
 # The internal board MIRRORS a customer board: every issue filed there is copied here (source
@@ -57,14 +57,14 @@ SEVERITIES = ["low", "medium", "high", "critical"]
 MODULES = [m.strip() for m in os.environ.get("ISSUES_MODULES", "core,ui,api,data,auth,admin,docs,infra").split(",") if m.strip()]
 if "other" not in MODULES:
     MODULES.append("other")
-CLAUDE_FIELDS = ["rootCause", "fixProposed", "fix", "files", "tests", "humanTests", "duplicateOf", "specRef", "infoNeeded"]
+AGENT_FIELDS = ["rootCause", "fixProposed", "fix", "files", "tests", "humanTests", "duplicateOf", "specRef", "infoNeeded"]
 IMAGE_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
 
-# Who may move an issue where. Testers verify and reopen; Claude gives verdicts; admin does anything.
+# Who may move an issue where. Testers verify and reopen; the Issue Agent gives verdicts; admin does anything.
 TESTER_MOVES = {"more_info": {"open"}, "fixed": {"verified", "open"}, "duplicate": {"verified", "open"},
                 "as_speced": {"verified", "open"}, "verified": {"closed", "open"}, "closed": {"open"}}
-CLAUDE_VERDICTS = {"fixed", "duplicate", "as_speced", "more_info"}
-CLAUDE_MOVES = {"new": set(CLAUDE_VERDICTS), "open": set(CLAUDE_VERDICTS)}
+AGENT_VERDICTS = {"fixed", "duplicate", "as_speced", "more_info"}
+AGENT_MOVES = {"new": set(AGENT_VERDICTS), "open": set(AGENT_VERDICTS)}
 NOTE_REQUIRED = {("more_info", "open"), ("fixed", "open"), ("duplicate", "open"), ("as_speced", "open"), ("verified", "open"), ("closed", "open")}
 
 
@@ -92,6 +92,15 @@ def init_db() -> None:
         CREATE TABLE IF NOT EXISTS uploads (
             id TEXT PRIMARY KEY, filename TEXT, content_type TEXT, size INTEGER, created_at TEXT NOT NULL);
         """)
+        # The verdict-giving role was called "claude" before it became the Issue Agent: carry old boards over.
+        for row in con.execute("""SELECT doc FROM issues WHERE doc LIKE '%"claude"%'""").fetchall():
+            doc = json.loads(row["doc"])
+            if "claude" in doc:
+                doc["agent"] = {**doc.pop("claude"), **(doc.get("agent") or {})}
+            for entry in doc.get("history", []) + doc.get("comments", []):
+                if entry.get("by") == "claude":
+                    entry["by"] = "agent"
+            put_issue(con, doc)
 
 
 @contextmanager
@@ -135,7 +144,7 @@ def register_upload(con: sqlite3.Connection, uid: str, filename: str, content_ty
 # ---------------- auth / actor ----------------
 class Actor(BaseModel):
     name: str
-    role: str  # tester | claude | admin
+    role: str  # tester | agent | admin
 
 
 def actor(request: Request) -> Actor:
@@ -144,11 +153,11 @@ def actor(request: Request) -> Actor:
         if given != TOKEN:
             raise HTTPException(401, "Missing or wrong token")
     role = request.headers.get("x-role", "tester").lower()
-    if role not in {"tester", "claude", "admin"}:
-        raise HTTPException(400, "X-Role must be tester, claude or admin")
+    if role not in {"tester", "agent", "admin"}:
+        raise HTTPException(400, "X-Role must be tester, agent or admin")
     if role not in ALLOWED_ROLES:
         raise HTTPException(403, f"This board does not offer the {role} role")
-    name = request.headers.get("x-actor", "").strip()[:80] or ("claude" if role == "claude" else "")
+    name = request.headers.get("x-actor", "").strip()[:80] or ("agent" if role == "agent" else "")
     return Actor(name=name, role=role)
 
 
@@ -194,13 +203,13 @@ class Transition(BaseModel):
     to: str
     note: str = ""
     screenshots: list[str] = []
-    claude: Optional[dict[str, Any]] = None
+    agent: Optional[dict[str, Any]] = None
 
 
 def public(doc: dict) -> dict:
     """What a caller may see. On a customer board the analysis block is withheld entirely."""
     if CUSTOMER:
-        doc = {**doc, "claude": {}}
+        doc = {**doc, "agent": {}}
     return doc
 
 
@@ -209,7 +218,7 @@ def summary(doc: dict) -> dict:
             "createdAt", "updatedAt", "build", "persona", "splitInto"]
     s = {k: doc.get(k) for k in keep}
     s["screenshotCount"] = len(doc.get("screenshots") or [])
-    s["processed"] = bool((doc.get("claude") or {}).get("processedAt")) and not CUSTOMER
+    s["processed"] = bool((doc.get("agent") or {}).get("processedAt")) and not CUSTOMER
     return s
 
 
@@ -278,7 +287,7 @@ def create_issue(body: NewIssue, a: Actor = Depends(actor)):
         doc = {"key": f"{PREFIX}-{num}", "num": num, "title": body.title.strip(), "description": body.description.strip(),
                "module": body.module, "kind": body.kind, "severity": body.severity, "persona": body.persona.strip(),
                "build": body.build.strip(), "status": "new", "source": "tester", "sourceRef": "", "reporter": a.name,
-               "createdAt": at, "updatedAt": at, "screenshots": _known_uploads(con, body.screenshots), "claude": {},
+               "createdAt": at, "updatedAt": at, "screenshots": _known_uploads(con, body.screenshots), "agent": {},
                "comments": [], "history": [{"at": at, "by": a.name, "from": "", "to": "new", "note": ""}]}
         put_issue(con, doc)
     return doc
@@ -293,7 +302,7 @@ def split_issue(key: str, body: Split, a: Actor = Depends(actor)):
     board: the customer files reports; the split is the team's reading of them."""
     if CUSTOMER:
         raise HTTPException(404, "Not on a customer board")
-    if a.role not in ("claude", "admin"):
+    if a.role not in ("agent", "admin"):
         raise HTTPException(403, "Only the Issue Agent or an admin splits an issue")
     for n, part in enumerate(body.parts, 1):
         for val, allowed, what in ((part.kind, KINDS, "kind"), (part.severity, SEVERITIES, "severity"), (part.module, MODULES, "module")):
@@ -312,7 +321,7 @@ def split_issue(key: str, body: Split, a: Actor = Depends(actor)):
                      "module": part.module, "kind": part.kind, "severity": part.severity, "persona": parent.get("persona", ""),
                      "build": parent.get("build", ""), "status": "new", "source": "split", "sourceRef": key,
                      "reporter": parent.get("reporter", ""), "createdAt": at, "updatedAt": at,
-                     "screenshots": list(parent.get("screenshots") or []), "claude": {}, "comments": [],
+                     "screenshots": list(parent.get("screenshots") or []), "agent": {}, "comments": [],
                      "history": [{"at": at, "by": who, "from": "", "to": "new", "note": f"Split from {key} ({parent.get('title', '')})."}]}
             put_issue(con, child)
             children.append(child)
@@ -332,7 +341,7 @@ def unsplit_issue(key: str, body: Comment, a: Actor = Depends(actor)):
     the parent (its analysis stays readable), and the parent forgets the split."""
     if CUSTOMER:
         raise HTTPException(404, "Not on a customer board")
-    if a.role not in ("claude", "admin"):
+    if a.role not in ("agent", "admin"):
         raise HTTPException(403, "Only the Issue Agent or an admin folds a split")
     at = now_iso()
     who = a.name or a.role
@@ -346,8 +355,8 @@ def unsplit_issue(key: str, body: Comment, a: Actor = Depends(actor)):
             if child.get("status") not in ("verified", "closed"):
                 frm = child["status"]
                 child["status"] = "duplicate"
-                child.setdefault("claude", {})["duplicateOf"] = key
-                child["claude"]["processedAt"] = at
+                child.setdefault("agent", {})["duplicateOf"] = key
+                child["agent"]["processedAt"] = at
                 child["history"].append({"at": at, "by": who, "from": frm, "to": "duplicate", "note": f"Folded back into {key}."})
                 child.setdefault("comments", []).append({"at": at, "by": who, "text": f"Folded back into {key}: the report is worked as one issue.", "screenshots": []})
                 child["updatedAt"] = at
@@ -381,22 +390,22 @@ def transition(key: str, body: Transition, a: Actor = Depends(actor)):
     with tx() as con:
         doc = get_issue(con, key)
         frm = doc["status"]
-        allowed = {"tester": TESTER_MOVES, "claude": CLAUDE_MOVES}.get(a.role)
-        # Claude may restate a verdict it already holds — same status, fields revised (a duplicate-of
+        allowed = {"tester": TESTER_MOVES, "agent": AGENT_MOVES}.get(a.role)
+        # The Issue Agent may restate a verdict it already holds — same status, fields revised (a duplicate-of
         # re-pointed at the right key). Its own verdict statuses only; a tester's stay out of reach.
-        revising = a.role == "claude" and body.to == frm and frm in CLAUDE_VERDICTS
+        revising = a.role == "agent" and body.to == frm and frm in AGENT_VERDICTS
         if allowed is not None and body.to not in allowed.get(frm, set()) and not revising:
             raise HTTPException(409, f"A {a.role} cannot move {key} from {frm} to {body.to}")
         if a.role != "admin" and (frm, body.to) in NOTE_REQUIRED and not body.note.strip():
             raise HTTPException(400, "A note is required for that move")
-        if body.claude is not None:
+        if body.agent is not None:
             if a.role == "tester":
-                raise HTTPException(403, "Only Claude or an admin writes the analysis")
-            unknown = set(body.claude) - set(CLAUDE_FIELDS)
+                raise HTTPException(403, "Only the Issue Agent or an admin writes the analysis")
+            unknown = set(body.agent) - set(AGENT_FIELDS)
             if unknown:
                 raise HTTPException(400, f"Unknown analysis fields: {sorted(unknown)}")
-            doc.setdefault("claude", {}).update({k: v for k, v in body.claude.items() if v})
-            doc["claude"]["processedAt"] = now_iso()
+            doc.setdefault("agent", {}).update({k: v for k, v in body.agent.items() if v})
+            doc["agent"]["processedAt"] = now_iso()
         at = now_iso()
         who = a.name or a.role
         doc["status"] = body.to
@@ -446,13 +455,13 @@ def _known_uploads(con: sqlite3.Connection, ids: list[str]) -> list[str]:
 
 # ---------------- mirroring a customer board ----------------
 class Remote:
-    """The customer board over HTTP, as the Issue Agent (role claude, signed PUSH_ACTOR)."""
+    """The customer board over HTTP, as the Issue Agent (role agent, signed PUSH_ACTOR)."""
 
     def __init__(self, base: str, token: str = ""):
         self.base, self.token = base.rstrip("/"), token
 
     def _req(self, path: str, body: Optional[dict] = None) -> urllib.request.Request:
-        headers = {"X-Role": "claude", "X-Actor": PUSH_ACTOR}
+        headers = {"X-Role": "agent", "X-Actor": PUSH_ACTOR}
         if self.token:
             headers["X-Issues-Token"] = self.token
         data = None
@@ -509,7 +518,7 @@ def _release_status(m: dict) -> Optional[str]:
 
 def _customer_note(mirror: dict, st: str) -> str:
     """The one line the customer sees with a status: the question when we need an answer, else a plain word."""
-    c = mirror.get("claude") or {}
+    c = mirror.get("agent") or {}
     if st == "more_info":
         return (c.get("infoNeeded") or "We need more information to reproduce this — please add what you can and reopen.").strip()
     if st == "fixed":
@@ -540,7 +549,7 @@ def sync_feedback(remote: Remote) -> dict:
                      "module": f.get("module", "other"), "kind": f.get("kind", "bug"), "severity": f.get("severity", "medium"),
                      "persona": f.get("persona", ""), "build": f.get("build", ""), "status": f.get("status", "new"), "source": "customer",
                      "sourceRef": f["key"], "reporter": f.get("reporter", ""), "createdAt": f.get("createdAt", at), "updatedAt": at,
-                     "screenshots": _copy_shots(con, remote, f.get("screenshots") or []), "claude": {},
+                     "screenshots": _copy_shots(con, remote, f.get("screenshots") or []), "agent": {},
                      "comments": [], "history": [{"at": at, "by": "sync", "from": "", "to": f.get("status", "new"),
                                                   "note": f"Mirrored from the customer board ({f['key']}, filed by {f.get('reporter') or 'unknown'})."}],
                      "sync": {"commentsSeen": 0, "historySeen": len(f.get("history") or []), "pushedAt": ""}}
@@ -567,7 +576,7 @@ def sync_feedback(remote: Remote) -> dict:
             last = (m.get("history") or [{}])[-1]
             release = _release_status(m)
             if release and f.get("status") != release and sy.get("pushedAt") != last.get("at"):
-                if f.get("status") in CLAUDE_MOVES and release in CLAUDE_MOVES[f["status"]]:
+                if f.get("status") in AGENT_MOVES and release in AGENT_MOVES[f["status"]]:
                     try:
                         remote.post_json(f"/api/issues/{f['key']}/transition", {"to": release, "note": _customer_note(m, release)})
                         sy["pushedAt"] = last.get("at")   # our own push comes back signed PUSH_ACTOR and is ignored above

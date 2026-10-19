@@ -86,7 +86,7 @@
   .meta { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12px; color:var(--t3); margin:8px 0 14px; align-items:center; }
   .card { background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:14px 16px; margin:12px 0; }
   .card h3 { margin:0 0 8px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--t3); display:flex; align-items:center; gap:8px; }
-  .card.claude { border-color:rgba(49,122,40,.35); background:linear-gradient(180deg, var(--card), var(--as)); }
+  .card.agent { border-color:rgba(49,122,40,.35); background:linear-gradient(180deg, var(--card), var(--as)); }
   .orb { width:14px; height:14px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #8DF87D, #317A28 60%, #0A3D2F); box-shadow:0 0 0 2px rgba(141,248,125,.25); flex:none; }
   .desc { white-space:pre-wrap; color:var(--t2); font-size:13.5px; }
   .desc code, .kv code { font-family:var(--mn); font-size:12px; background:var(--s2); padding:0 4px; border-radius:4px; }
@@ -161,7 +161,7 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtDate = iso => iso ? String(iso).slice(0, 10) : '';
-  const who = by => { const b = String(by || '').toLowerCase(); if (b === 'claude') return state.meta && state.meta.customer ? (state.meta.pushActor || 'Product team') : 'Issue Agent'; if (b === 'sync') return 'Customer board'; return by; };
+  const who = by => { const b = String(by || '').toLowerCase(); if (b === 'agent') return state.meta && state.meta.customer ? (state.meta.pushActor || 'Product team') : 'Issue Agent'; if (b === 'sync') return 'Customer board'; return by; };
   const rich = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
   let toastT = null;
   function toast(msg) { let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); } t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
@@ -264,8 +264,8 @@
     state.open = key;
     let i; try { i = await api('api/issues/' + encodeURIComponent(key)); } catch (e) { toast(e.message); return; }
     const host = $('#drawerHost');
-    const c = i.claude || {};
-    const claudeRows = [['Root cause', c.rootCause], ['Fix proposed', c.fixProposed], ['Fix', c.fix], ['Tests added', c.tests], ['Human testing', c.humanTests], ['Duplicate of', c.duplicateOf], ['Spec reference', c.specRef], ['Info needed', c.infoNeeded], ['Files', c.files]].filter(r => r[1]);
+    const c = i.agent || {};
+    const agentRows = [['Root cause', c.rootCause], ['Fix proposed', c.fixProposed], ['Fix', c.fix], ['Tests added', c.tests], ['Human testing', c.humanTests], ['Duplicate of', c.duplicateOf], ['Spec reference', c.specRef], ['Info needed', c.infoNeeded], ['Files', c.files]].filter(r => r[1]);
     const tr = transitionsFor(i);
     host.innerHTML = `<div class="scrim" id="scrim"></div><div class="drawer" role="dialog" aria-label="Issue ${esc(i.key)}">
       <button class="btn sm close" id="dclose">Close ✕</button>
@@ -275,7 +275,7 @@
       <div class="card"><h3>Description</h3><div class="desc">${rich(i.description || '')}</div>${shotsHtml(i.screenshots)}</div>
       ${(i.splitInto || []).length ? `<div class="card"><h3>Split into</h3><div class="desc">${i.splitInto.map(k => `<a href="#" class="mono" data-open="${esc(k)}">${esc(k)}</a>`).join(' · ')}</div></div>` : ''}
       ${i.source === 'split' && i.sourceRef ? `<div class="card"><h3>Part of</h3><div class="desc"><a href="#" class="mono" data-open="${esc(i.sourceRef)}">${esc(i.sourceRef)}</a></div></div>` : ''}
-      ${state.meta.customer ? '' : claudeRows.length || c.processedAt ? `<div class="card claude"><h3><span class="orb"></span>Comments from Analyzer${c.processedAt ? ` <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0">${fmtDate(c.processedAt)}</span>` : ''}</h3><div class="kv">${claudeRows.map(r => `<div class="l">${r[0]}</div><div class="v">${rich(r[1])}</div>`).join('')}</div></div>` : `<div class="card claude"><h3><span class="orb"></span>Comments from Analyzer</h3><div class="hint">Not processed yet. The Issue Agent picks up New and Open issues.</div></div>`}
+      ${state.meta.customer ? '' : agentRows.length || c.processedAt ? `<div class="card agent"><h3><span class="orb"></span>Comments from Analyzer${c.processedAt ? ` <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0">${fmtDate(c.processedAt)}</span>` : ''}</h3><div class="kv">${agentRows.map(r => `<div class="l">${r[0]}</div><div class="v">${rich(r[1])}</div>`).join('')}</div></div>` : `<div class="card agent"><h3><span class="orb"></span>Comments from Analyzer</h3><div class="hint">Not processed yet. The Issue Agent picks up New and Open issues.</div></div>`}
       ${(i.comments || []).length ? `<div class="card"><h3>Information added</h3><ul class="timeline">${i.comments.map(cm => `<li><span class="at">${fmtDate(cm.at)}<br><span class="by">${esc(who(cm.by) || '')}</span></span><span class="desc">${rich(cm.text)}${shotsHtml(cm.screenshots)}</span></li>`).join('')}</ul></div>` : ''}
       <div class="card"><h3>Your move</h3>
         ${!state.meta.customer && i.source === 'customer' && ['fixed', 'duplicate', 'as_speced'].includes(i.status) ? `<div class="dstate" style="color:var(--am)">Customer-filed: the customer still sees this as ${i.status === 'fixed' ? 'New/Open' : 'open'} — marking it <b>Verified</b> here is what releases <b>${SLABEL[i.status]}</b> to their board.</div>` : ''}

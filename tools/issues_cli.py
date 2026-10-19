@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Claude's side of the issue tracker (issues/app.py): list, show, verdict, screenshots.
+"""The Issue Agent's side of the issue tracker (issues/app.py): list, show, verdict, screenshots.
 
   python3 tools/issues_cli.py list [--status new,open]
   python3 tools/issues_cli.py show IS-512
@@ -30,7 +30,7 @@ TOKEN = os.environ.get("ISSUES_TOKEN", "")
 
 def call(method: str, path: str, body: dict | None = None, raw: bool = False):
     req = urllib.request.Request(f"{URL}/{path.lstrip('/')}", method=method)
-    req.add_header("X-Role", "claude")
+    req.add_header("X-Role", "agent")
     req.add_header("X-Actor", "Issue Agent")
     if TOKEN:
         req.add_header("X-Issues-Token", TOKEN)
@@ -77,11 +77,11 @@ def cmd_shots(a):
 
 
 def cmd_verdict(a):
-    claude = {k: v for k, v in {"rootCause": a.root_cause, "fixProposed": a.fix_proposed, "fix": a.fix, "files": a.files, "tests": a.tests,
+    agent = {k: v for k, v in {"rootCause": a.root_cause, "fixProposed": a.fix_proposed, "fix": a.fix, "files": a.files, "tests": a.tests,
                                 "humanTests": a.human_tests, "duplicateOf": a.duplicate_of, "specRef": a.spec_ref,
                                 "infoNeeded": a.info_needed}.items() if v}
-    doc = call("POST", f"api/issues/{a.key}/transition", {"to": a.status, "note": a.note or "", "claude": claude})
-    print(f"{doc['key']} → {doc['status']} ({', '.join(claude) or 'no analysis fields'})")
+    doc = call("POST", f"api/issues/{a.key}/transition", {"to": a.status, "note": a.note or "", "agent": agent})
+    print(f"{doc['key']} → {doc['status']} ({', '.join(agent) or 'no analysis fields'})")
 
 
 def cmd_comment(a):

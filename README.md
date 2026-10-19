@@ -25,7 +25,7 @@ manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
  DEPLOY    /release         tree identified → every gate green → deploy → smoke (health, asset type, version, login) → release log
      │
  MAINTAIN  /address-feedback  clarify → classify from evidence → dispatch one skill → close the register honestly
-           /process-issues    tracker queue → screenshots → skills → verdict + human test steps (Claude never closes)
+           /process-issues    Issue Agent (own context): tracker queue → screenshots → skills → verdict + human test steps (never closes)
            /test-pack         human test plan · exploratory charters · per-module coaching pack, derived from the feature list
            /test-guide        a one-page customer tester's guide for one module / feature / use case, labels verified in the source
            /guide-screenshots annotated screenshot storyboard for a guide (ring + pointer + caption), narrated videos on request
@@ -59,12 +59,13 @@ framework without touching your ledger. `/product-interview` writes the product 
 | `tools/screenshots/` | Storyboard capture for tester guides: `stack.sh` (fresh stack from the manifest), `lib.mjs` (ring + pointer + caption, shoot-then-click), `capture.mjs`, `build_videos.py`; `app.config.mjs` and `storyboards/` are the project's | factory + project |
 | `.claude/agents/docs-agent.md` | Documentation authority; derives and reconciles user guides | factory |
 | `.claude/agents/evaluator-assistant.md` | Assistant to a non-developer tester | factory |
+| `.claude/agents/issue-agent.md` | The Issue Agent: works the tracker queue in its own context; the only actor that gives verdicts | factory |
 | `.claude/hooks/` | Feature-list change detector (content hash) → asks for guide reconciliation; stale-citation checker | factory |
 | `tools/factory.py` | Reads the manifest for scripts (`get`, `cmd`, `env`, `check`) | factory |
-| `tools/issues_cli.py` | Claude's side of the tracker | factory |
+| `tools/issues_cli.py` | The Issue Agent's client for the tracker | factory |
 | `tools/issues_dashboard.py` | Issues log → classified JSON → Issue Ledger HTML | factory |
 | `tools/render_docs_site.py` | Internal docs site from the testing docs and the ledger | factory |
-| `issues/` | The tracker: FastAPI + SQLite + screenshots, tester / claude / admin roles, server-enforced state machine, 1-n split of a report into parts (owner-approved), optional status-only customer board with mirroring | factory |
+| `issues/` | The tracker: FastAPI + SQLite + screenshots, tester / agent / admin roles, server-enforced state machine, 1-n split of a report into parts (owner-approved), optional status-only customer board with mirroring | factory |
 | `templates/` | CLAUDE.md, the docs ledger, CI workflow, classified JSON — filled by `/setup-project` | project |
 | `deploy/docker-compose.issues.yml` | Two boards from one image, for internal deployments | project |
 
@@ -79,7 +80,7 @@ framework without touching your ledger. `/product-interview` writes the product 
 7. **Derived artefacts are generated and drift-checked**, never hand-edited.
 8. **Design seams for testability**: a clock seam, twin engines with parity tests, fresh seeds, guard tests. Third instance of a bug class → a guard test.
 9. **Humans explore, automation checks.** Rule card, charters, report shape; every discovery returns as a test.
-10. **Role separation on the board.** Claude proposes verdicts with human-test steps; humans verify and close; product decisions stay with the owner.
+10. **Role separation on the board.** The Issue Agent proposes verdicts with human-test steps; humans verify and close; product decisions stay with the owner.
 11. **Money, statutory and access changes are business decisions.** Confirm first.
 12. **Real dates from the shell**; the app clock and the doc clock are never mixed.
 13. **Write down the why**, tersely, everywhere.

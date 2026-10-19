@@ -49,27 +49,49 @@ def test_filing_needs_a_name(client):
     assert r.status_code == 400
 
 
-def test_tester_cannot_give_verdicts_but_claude_can(client):
+def test_tester_cannot_give_verdicts_but_agent_can(client):
     k = file_issue(client)["key"]
     r = client.post(f"/api/issues/{k}/transition", json={"to": "fixed"}, headers=hdr())
     assert r.status_code == 409
-    r = client.post(f"/api/issues/{k}/transition", json={"to": "fixed", "claude": {"rootCause": "x", "fixProposed": "p", "fix": "y", "tests": "t", "humanTests": "h"}}, headers=hdr("claude", "claude"))
+    r = client.post(f"/api/issues/{k}/transition", json={"to": "fixed", "agent": {"rootCause": "x", "fixProposed": "p", "fix": "y", "tests": "t", "humanTests": "h"}}, headers=hdr("agent", "agent"))
     assert r.status_code == 200
     doc = r.json()
-    assert doc["status"] == "fixed" and doc["claude"]["processedAt"] and doc["claude"]["fix"] == "y" and doc["claude"]["fixProposed"] == "p"
-    assert doc["history"][-1] == {**doc["history"][-1], "by": "claude", "from": "new", "to": "fixed"}
+    assert doc["status"] == "fixed" and doc["agent"]["processedAt"] and doc["agent"]["fix"] == "y" and doc["agent"]["fixProposed"] == "p"
+    assert doc["history"][-1] == {**doc["history"][-1], "by": "agent", "from": "new", "to": "fixed"}
+
+
+def test_the_old_claude_role_is_refused(client):
+    k = file_issue(client)["key"]
+    r = client.post(f"/api/issues/{k}/transition", json={"to": "fixed"}, headers=hdr("claude", "claude"))
+    assert r.status_code == 400
+
+
+def test_startup_carries_an_old_claude_board_over_to_agent(client):
+    import issues.app as appmod
+    k = file_issue(client)["key"]
+    with appmod.tx() as con:
+        doc = appmod.get_issue(con, k)
+        doc.pop("agent")
+        doc["claude"] = {"fix": "old fix", "processedAt": "2026-01-01T00:00:00.000Z"}
+        doc["history"].append({"at": "2026-01-01T00:00:00.000Z", "by": "claude", "from": "new", "to": "fixed", "note": ""})
+        doc["comments"].append({"at": "2026-01-01T00:00:00.000Z", "by": "claude", "text": "done", "screenshots": []})
+        appmod.put_issue(con, doc)
+    appmod.init_db()
+    doc = client.get(f"/api/issues/{k}", headers=hdr()).json()
+    assert "claude" not in doc and doc["agent"]["fix"] == "old fix"
+    assert doc["history"][-1]["by"] == "agent" and doc["comments"][-1]["by"] == "agent"
 
 
 def test_full_happy_path_to_closed(client):
     k = file_issue(client)["key"]
-    client.post(f"/api/issues/{k}/transition", json={"to": "fixed", "claude": {"fix": "done"}}, headers=hdr("claude", "claude"))
+    client.post(f"/api/issues/{k}/transition", json={"to": "fixed", "agent": {"fix": "done"}}, headers=hdr("agent", "agent"))
     assert client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr()).json()["verification"]["by"] == "Priya"
     assert client.post(f"/api/issues/{k}/transition", json={"to": "closed"}, headers=hdr()).json()["status"] == "closed"
 
 
 def test_more_info_needs_an_answer_to_reopen(client):
     k = file_issue(client)["key"]
-    client.post(f"/api/issues/{k}/transition", json={"to": "more_info", "claude": {"infoNeeded": "which login?"}}, headers=hdr("claude", "claude"))
+    client.post(f"/api/issues/{k}/transition", json={"to": "more_info", "agent": {"infoNeeded": "which login?"}}, headers=hdr("agent", "agent"))
     r = client.post(f"/api/issues/{k}/transition", json={"to": "open"}, headers=hdr())
     assert r.status_code == 400
     r = client.post(f"/api/issues/{k}/transition", json={"to": "open", "note": "Logged in as Layla"}, headers=hdr())
@@ -77,23 +99,23 @@ def test_more_info_needs_an_answer_to_reopen(client):
     assert client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr()).status_code == 409
 
 
-def test_claude_cannot_verify_or_close(client):
+def test_agent_cannot_verify_or_close(client):
     k = file_issue(client)["key"]
-    client.post(f"/api/issues/{k}/transition", json={"to": "fixed"}, headers=hdr("claude", "claude"))
-    assert client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr("claude", "claude")).status_code == 409
+    client.post(f"/api/issues/{k}/transition", json={"to": "fixed"}, headers=hdr("agent", "agent"))
+    assert client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr("agent", "agent")).status_code == 409
 
 
-def test_claude_may_restate_its_own_verdict_but_not_a_testers_status(client):
+def test_agent_may_restate_its_own_verdict_but_not_a_testers_status(client):
     # IS-424 — a duplicate-of pointed at an issues-log number; re-pointing it at the tracker key
     # is the same verdict with revised fields, not a move.
     k = file_issue(client)["key"]
-    client.post(f"/api/issues/{k}/transition", json={"to": "duplicate", "claude": {"duplicateOf": "#184"}}, headers=hdr("claude", "claude"))
-    r = client.post(f"/api/issues/{k}/transition", json={"to": "duplicate", "claude": {"duplicateOf": "IS-345"}}, headers=hdr("claude", "claude"))
-    assert r.status_code == 200 and r.json()["status"] == "duplicate" and r.json()["claude"]["duplicateOf"] == "IS-345"
+    client.post(f"/api/issues/{k}/transition", json={"to": "duplicate", "agent": {"duplicateOf": "#184"}}, headers=hdr("agent", "agent"))
+    r = client.post(f"/api/issues/{k}/transition", json={"to": "duplicate", "agent": {"duplicateOf": "IS-345"}}, headers=hdr("agent", "agent"))
+    assert r.status_code == 200 and r.json()["status"] == "duplicate" and r.json()["agent"]["duplicateOf"] == "IS-345"
     assert r.json()["history"][-1] == {**r.json()["history"][-1], "from": "duplicate", "to": "duplicate"}
-    # Verified is a tester's status: Claude may not restate it, and a tester may not restate a verdict.
+    # Verified is a tester's status: the agent may not restate it, and a tester may not restate a verdict.
     client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr())
-    assert client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr("claude", "claude")).status_code == 409
+    assert client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr("agent", "agent")).status_code == 409
     assert client.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr()).status_code == 409
 
 
@@ -152,7 +174,7 @@ def test_a_second_board_carries_its_own_brand_and_key_prefix(tmp_path, monkeypat
 def test_a_board_can_refuse_the_admin_role(tmp_path, monkeypatch):
     monkeypatch.setenv("ISSUES_DATA", str(tmp_path))
     monkeypatch.delenv("ISSUES_TOKEN", raising=False)
-    monkeypatch.setenv("ISSUES_ROLES", "tester,claude")
+    monkeypatch.setenv("ISSUES_ROLES", "tester,agent")
     import issues.app as appmod
     importlib.reload(appmod)
     with TestClient(appmod.app) as c:
@@ -160,7 +182,7 @@ def test_a_board_can_refuse_the_admin_role(tmp_path, monkeypatch):
         assert c.get("/api/issues", headers=hdr("X", "admin")).status_code == 403
         k = c.post("/api/issues", json={"title": "Customer report"}, headers=hdr("Customer")).json()["key"]
         assert c.post(f"/api/issues/{k}/transition", json={"to": "closed"}, headers=hdr("X", "admin")).status_code == 403
-        assert c.post(f"/api/issues/{k}/transition", json={"to": "fixed"}, headers=hdr("claude", "claude")).status_code == 200
+        assert c.post(f"/api/issues/{k}/transition", json={"to": "fixed"}, headers=hdr("agent", "agent")).status_code == 200
 
 
 # ---------------- the customer board and its mirror ----------------
@@ -182,7 +204,7 @@ class FakeRemote:
     """The customer board reached through its TestClient, the way Remote reaches it over HTTP."""
 
     def __init__(self, client, actor):
-        self.c, self.h = client, {"X-Role": "claude", "X-Actor": actor}
+        self.c, self.h = client, {"X-Role": "agent", "X-Actor": actor}
 
     def get_json(self, path):
         r = self.c.get(path, headers=self.h); assert r.status_code == 200, r.text; return r.json()
@@ -200,7 +222,7 @@ class FakeRemote:
 
 @pytest.fixture()
 def boards(tmp_path):
-    customer = _load_board("issues_app_customer", tmp_path / "fb", {"ISSUES_PREFIX": "FB", "ISSUES_ROLES": "tester,claude", "ISSUES_CUSTOMER": "1"})
+    customer = _load_board("issues_app_customer", tmp_path / "fb", {"ISSUES_PREFIX": "FB", "ISSUES_ROLES": "tester,agent", "ISSUES_CUSTOMER": "1"})
     internal = _load_board("issues_app_internal", tmp_path / "tp", {})
     with TestClient(customer.app) as fb, TestClient(internal.app) as tp:
         yield customer, fb, internal, tp
@@ -209,10 +231,10 @@ def boards(tmp_path):
 def test_a_customer_board_withholds_the_analysis(boards):
     customer, fb, *_ = boards
     k = file_issue(fb)["key"]
-    r = fb.post(f"/api/issues/{k}/transition", json={"to": "fixed", "claude": {"rootCause": "secret", "fix": "y"}}, headers=hdr("claude", "claude"))
-    assert r.status_code == 200 and r.json()["claude"] == {}
-    assert fb.get(f"/api/issues/{k}", headers=hdr()).json()["claude"] == {}
-    assert fb.get("/api/issues?full=true", headers=hdr()).json()[0]["claude"] == {}
+    r = fb.post(f"/api/issues/{k}/transition", json={"to": "fixed", "agent": {"rootCause": "secret", "fix": "y"}}, headers=hdr("agent", "agent"))
+    assert r.status_code == 200 and r.json()["agent"] == {}
+    assert fb.get(f"/api/issues/{k}", headers=hdr()).json()["agent"] == {}
+    assert fb.get("/api/issues?full=true", headers=hdr()).json()[0]["agent"] == {}
     assert fb.get("/api/issues", headers=hdr()).json()[0]["processed"] is False
     assert fb.get("/api/meta", headers=hdr()).json()["customer"] is True
     assert "secret" not in fb.get(f"/api/issues/{k}", headers=hdr()).text
@@ -233,11 +255,11 @@ def test_customer_issues_mirror_in_and_only_status_travels_back(boards):
     assert m["comments"][0]["text"] == "also on Safari"
     assert internal.sync_feedback(remote) == {"created": [], "comments": 0, "customerMoves": 0, "pushed": [], "skipped": []}
     # 2. the agent asks a question here → the customer sees more_info and the question, nothing else
-    tp.post("/api/issues/IS-501/transition", json={"to": "more_info", "claude": {"rootCause": "cannot see it", "infoNeeded": "Which month?"}}, headers=hdr("claude", "claude"))
+    tp.post("/api/issues/IS-501/transition", json={"to": "more_info", "agent": {"rootCause": "cannot see it", "infoNeeded": "Which month?"}}, headers=hdr("agent", "agent"))
     rep = internal.sync_feedback(remote)
     assert rep["pushed"] == [f"{f['key']}→more_info"]
     fdoc = fb.get(f"/api/issues/{f['key']}", headers=hdr()).json()
-    assert fdoc["status"] == "more_info" and fdoc["claude"] == {} and "cannot see it" not in fb.get(f"/api/issues/{f['key']}", headers=hdr()).text
+    assert fdoc["status"] == "more_info" and fdoc["agent"] == {} and "cannot see it" not in fb.get(f"/api/issues/{f['key']}", headers=hdr()).text
     assert fdoc["history"][-1]["by"] == internal.PUSH_ACTOR and fdoc["history"][-1]["note"] == "Which month?"
     assert internal.sync_feedback(remote)["pushed"] == []        # pushed once, not again
     # 3. the customer answers and reopens → the mirror reopens with the answer
@@ -247,14 +269,14 @@ def test_customer_issues_mirror_in_and_only_status_travels_back(boards):
     m = tp.get("/api/issues/IS-501", headers=hdr()).json()
     assert m["status"] == "open" and m["history"][-1]["note"] == "August" and m["comments"][-1]["text"] == "August"
     # 4. the agent fixes it → NOTHING travels yet: the customer still sees Open until it is verified here
-    tp.post("/api/issues/IS-501/transition", json={"to": "fixed", "claude": {"rootCause": "r", "fix": "f", "tests": "t", "humanTests": "h"}}, headers=hdr("claude", "claude"))
+    tp.post("/api/issues/IS-501/transition", json={"to": "fixed", "agent": {"rootCause": "r", "fix": "f", "tests": "t", "humanTests": "h"}}, headers=hdr("agent", "agent"))
     assert internal.sync_feedback(remote)["pushed"] == []
     assert fb.get(f"/api/issues/{f['key']}", headers=hdr()).json()["status"] == "open"
     # 5. an internal tester verifies → Fixed is released to the customer with a plain note, analysis withheld
     tp.post("/api/issues/IS-501/transition", json={"to": "verified", "note": "checked on build 510"}, headers=hdr("Priya"))
     assert internal.sync_feedback(remote)["pushed"] == [f"{f['key']}→fixed"]
     fdoc = fb.get(f"/api/issues/{f['key']}", headers=hdr()).json()
-    assert fdoc["status"] == "fixed" and fdoc["claude"] == {} and "build 510" not in fb.get(f"/api/issues/{f['key']}", headers=hdr()).text
+    assert fdoc["status"] == "fixed" and fdoc["agent"] == {} and "build 510" not in fb.get(f"/api/issues/{f['key']}", headers=hdr()).text
     assert fdoc["history"][-1]["by"] == internal.PUSH_ACTOR and fdoc["history"][-1]["note"].startswith("Fixed")
     assert internal.sync_feedback(remote)["pushed"] == []
     # 6. the customer verifies and closes → the mirror closes; the internal verification record stays
@@ -262,7 +284,7 @@ def test_customer_issues_mirror_in_and_only_status_travels_back(boards):
     fb.post(f"/api/issues/{f['key']}/transition", json={"to": "closed"}, headers=hdr("Nousheed"))
     assert internal.sync_feedback(remote)["customerMoves"] == 1        # verified was already the mirror's state
     m = tp.get("/api/issues/IS-501", headers=hdr()).json()
-    assert m["status"] == "closed" and m["verification"]["by"] == "Priya" and m["claude"]["fix"] == "f"
+    assert m["status"] == "closed" and m["verification"]["by"] == "Priya" and m["agent"]["fix"] == "f"
 
 
 def test_a_customer_reopen_after_release_reopens_the_mirror_and_a_verdict_verified_here_is_released(boards):
@@ -270,7 +292,7 @@ def test_a_customer_reopen_after_release_reopens_the_mirror_and_a_verdict_verifi
     remote = FakeRemote(fb, internal.PUSH_ACTOR)
     f = fb.post("/api/issues", json={"title": "Column header says Role", "description": "steps"}, headers=hdr("Nousheed")).json()
     internal.sync_feedback(remote)
-    tp.post("/api/issues/IS-501/transition", json={"to": "as_speced", "claude": {"specRef": "PRD 3.1"}}, headers=hdr("claude", "claude"))
+    tp.post("/api/issues/IS-501/transition", json={"to": "as_speced", "agent": {"specRef": "PRD 3.1"}}, headers=hdr("agent", "agent"))
     assert internal.sync_feedback(remote)["pushed"] == []
     tp.post("/api/issues/IS-501/transition", json={"to": "verified"}, headers=hdr("Priya"))
     assert internal.sync_feedback(remote)["pushed"] == [f"{f['key']}→as_speced"]
@@ -284,7 +306,7 @@ def test_a_customer_reopen_after_release_reopens_the_mirror_and_a_verdict_verifi
 def test_sync_endpoint_needs_a_mirror_and_a_non_tester(boards):
     _, _, internal, tp = boards
     assert tp.post("/api/sync", headers=hdr()).status_code == 403
-    assert tp.post("/api/sync", headers=hdr("claude", "claude")).status_code == 404   # no FEEDBACK_SYNC_URL here
+    assert tp.post("/api/sync", headers=hdr("agent", "agent")).status_code == 404   # no FEEDBACK_SYNC_URL here
 
 
 def test_a_report_splits_into_independent_issues_linked_both_ways(client):
@@ -296,7 +318,7 @@ def test_a_report_splits_into_independent_issues_linked_both_ways(client):
     r = client.post(f"/api/issues/{p['key']}/split", json={"parts": [
         {"title": "Part A", "module": "api", "kind": "bug", "severity": "high", "description": "a"},
         {"title": "Part B", "module": "ui", "kind": "enhancement", "severity": "low", "description": "b"}], "note": "two defects in one report"},
-        headers=hdr("Issue Agent", "claude"))
+        headers=hdr("Issue Agent", "agent"))
     assert r.status_code == 201, r.text
     out = r.json()
     a, b = out["children"]
@@ -307,10 +329,10 @@ def test_a_report_splits_into_independent_issues_linked_both_ways(client):
     assert parent["splitInto"] == ["IS-502", "IS-503"] and parent["status"] == "new"
     assert "Split into IS-502" in parent["comments"][-1]["text"] and "two defects" in parent["comments"][-1]["text"]
     # each part is worked on its own
-    r = client.post("/api/issues/IS-502/transition", json={"to": "fixed", "claude": {"fix": "done"}}, headers=hdr("Issue Agent", "claude"))
+    r = client.post("/api/issues/IS-502/transition", json={"to": "fixed", "agent": {"fix": "done"}}, headers=hdr("Issue Agent", "agent"))
     assert r.status_code == 200 and client.get(f"/api/issues/{p['key']}", headers=hdr()).json()["status"] == "new"
     # a part is not split again; the parent is
-    r = client.post("/api/issues/IS-502/split", json={"parts": [{"title": "Deeper"}]}, headers=hdr("Issue Agent", "claude"))
+    r = client.post("/api/issues/IS-502/split", json={"parts": [{"title": "Deeper"}]}, headers=hdr("Issue Agent", "agent"))
     assert r.status_code == 409
     rows = client.get("/api/issues?status=new", headers=hdr()).json()
     assert any(x["key"] == p["key"] and x.get("splitInto") == ["IS-502", "IS-503"] for x in rows)
@@ -319,22 +341,22 @@ def test_a_report_splits_into_independent_issues_linked_both_ways(client):
 def test_a_customer_board_has_no_split(boards):
     customer, fb, internal, tp = boards
     f = fb.post("/api/issues", json={"title": "Two problems", "description": "x"}, headers=hdr("Nousheed")).json()
-    r = fb.post(f"/api/issues/{f['key']}/split", json={"parts": [{"title": "One"}]}, headers=hdr("Issue Agent", "claude"))
+    r = fb.post(f"/api/issues/{f['key']}/split", json={"parts": [{"title": "One"}]}, headers=hdr("Issue Agent", "agent"))
     assert r.status_code == 404
 
 
 def test_a_split_folds_back_into_its_parent_without_deleting_the_parts(client):
     p = file_issue(client, title="Two things")
-    out = client.post(f"/api/issues/{p['key']}/split", json={"parts": [{"title": "One"}, {"title": "Two"}]}, headers=hdr("Issue Agent", "claude")).json()
+    out = client.post(f"/api/issues/{p['key']}/split", json={"parts": [{"title": "One"}, {"title": "Two"}]}, headers=hdr("Issue Agent", "agent")).json()
     a, b = [c["key"] for c in out["children"]]
-    client.post(f"/api/issues/{a}/transition", json={"to": "fixed", "claude": {"fix": "x"}}, headers=hdr("Issue Agent", "claude"))
+    client.post(f"/api/issues/{a}/transition", json={"to": "fixed", "agent": {"fix": "x"}}, headers=hdr("Issue Agent", "agent"))
     r = client.post(f"/api/issues/{p['key']}/unsplit", json={"text": "meant another issue"}, headers=hdr())
     assert r.status_code == 403
-    r = client.post(f"/api/issues/{p['key']}/unsplit", json={"text": "meant another issue"}, headers=hdr("Issue Agent", "claude"))
+    r = client.post(f"/api/issues/{p['key']}/unsplit", json={"text": "meant another issue"}, headers=hdr("Issue Agent", "agent"))
     assert r.status_code == 200 and "splitInto" not in r.json() and "meant another issue" in r.json()["comments"][-1]["text"]
     for k in (a, b):
         d = client.get(f"/api/issues/{k}", headers=hdr()).json()
-        assert d["status"] == "duplicate" and d["claude"]["duplicateOf"] == p["key"] and d["source"] == "split"
-    assert client.get(f"/api/issues/{a}", headers=hdr()).json()["claude"]["fix"] == "x", "the part's analysis is kept"
-    r = client.post(f"/api/issues/{p['key']}/unsplit", json={}, headers=hdr("Issue Agent", "claude"))
+        assert d["status"] == "duplicate" and d["agent"]["duplicateOf"] == p["key"] and d["source"] == "split"
+    assert client.get(f"/api/issues/{a}", headers=hdr()).json()["agent"]["fix"] == "x", "the part's analysis is kept"
+    r = client.post(f"/api/issues/{p['key']}/unsplit", json={}, headers=hdr("Issue Agent", "agent"))
     assert r.status_code == 409

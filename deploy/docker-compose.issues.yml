@@ -2,7 +2,7 @@
 #
 #   docker compose -f deploy/docker-compose.issues.yml up -d --build
 #
-# {{slug}}-issues   — the internal board (testers + Claude), full analysis visible
+# {{slug}}-issues   — the internal board (testers + the Issue Agent), full analysis visible
 # {{slug}}-feedback — the customer board: own database, status only, no admin role;
 #                     the internal board mirrors it and pushes status back
 #
@@ -44,7 +44,7 @@ services:
       - ISSUES_BRAND=${FEEDBACK_BRAND:-{{project_name}} · Feedback}
       - ISSUES_PREFIX=${FEEDBACK_PREFIX:-FB}
       - ISSUES_MODULES=${ISSUES_MODULES:-}
-      - ISSUES_ROLES=tester,claude        # no admin on the customer board
+      - ISSUES_ROLES=tester,agent        # no admin on the customer board
       - ISSUES_CUSTOMER=1                 # status only: the analysis never leaves the server
     volumes:
       - {{slug}}_feedback_data:/data
