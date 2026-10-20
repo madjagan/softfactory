@@ -3,7 +3,7 @@ name: marketing-site
 description: "Generate or refresh the product's marketing home page from the ledger: the brief in factory.yaml (marketing.*), the product summary (personas, value proposition canvas, alternatives), the PRD, the feature list and the user guides, styled with the project's design system. One HTML file at docs.marketing_site plus a private claude.ai link that stays the same on every regeneration. Every claim is traced to a source; nothing about customers, logos, testimonials, counts, offices or legal pages is invented. Triggers on: marketing site, marketing page, landing page, home page for the product, product website, refresh the marketing page, /marketing-site."
 metadata:
   author: "softfactory"
-  version: "1.0"
+  version: "1.1"
   category: "documentation"
 ---
 
@@ -17,6 +17,31 @@ Read first: `factory.yaml` (`product.*`, `stack.design_system`, `marketing.*`, `
 `CLAUDE.md`, and an existing `docs.marketing_site` if there is one. This framework's own page,
 `site/index.html` in the softfactory repo, is the reference build: it shows the section spine,
 the token block and the publish markers.
+
+## No ledger
+
+Some repos have no feature list, PRD or product summary yet, such as a framework, a library or
+an early prototype. Don't stop, and don't invent one. Before Phase 1:
+
+1. Map each ledger role to the nearest file that holds the facts, and ask the owner to confirm
+   the mapping:
+
+   | Ledger role | Stand-in |
+   |---|---|
+   | product summary | `README.md` |
+   | PRD | a methodology, design or brief document; otherwise the README |
+   | feature list ● | what exists in the repo: modules, commands, skills, apps, each with its path |
+   | feature list ◐ | approved or drafted specs (`docs/specs/*`) |
+   | user guides | usage docs, or the README's usage section |
+   | release log | tags and `git log`, for numbers only |
+
+2. Write the mapping into `factory.yaml`: `docs.product_summary` and `docs.prd` take the stand-in
+   paths, and a comment block at the top of the file records the rest. The next run then reads
+   it and asks nothing.
+3. Claims cite the stand-in `file:line`, or a path for a ● row. Specs count as ◐ and are listed in
+   the report like any other ◐ row.
+4. The report says the page was built from stand-ins, and recommends `/product-interview` then
+   `/setup-project` when the repo is a product that should have a ledger.
 
 ## Principles
 

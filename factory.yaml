@@ -1,0 +1,34 @@
+# factory.yaml — softfactory's own manifest. Only what /marketing-site needs: this repo is the
+# framework, not a project it manages, so it has no ledger. Stand-ins for the ledger:
+#   product summary + PRD  → README.md, METHODOLOGY_BRIEF.md
+#   feature list ●         → .claude/skills, .claude/agents, issues/, tools/, .claude/hooks
+#   feature list ◐         → docs/specs/*
+# install.sh copies factory.example.yaml into projects, never this file.
+
+project:
+  name: softfactory
+  slug: softfactory
+  owner: Madhavan Jagannathan
+  summary: >
+    A spec-first development framework for Claude Code: skills, agents, hooks, templates and
+    lean apps that turn a product summary into a repo running the setup → develop → deploy →
+    maintain loop with a documents-as-ledger discipline.
+
+stack:
+  design_system:                          # none; the page defines its tokens in one :root block
+
+docs:
+  product_summary: README.md
+  prd: METHODOLOGY_BRIEF.md
+  marketing_site: site/index.html
+
+marketing:
+  audience: Solo founders and small product teams building with Claude Code
+  headline: Software, built to *spec*.
+  primary_cta: Install
+  primary_href: "#install"
+  secondary_cta: See it in action
+  secondary_href: "#agents"
+  reference_url: ""
+  contact: ""                             # blank = flagged placeholder hello@softfactory.example
+  artifact_url: https://claude.ai/artifact/QWLs9QF3nu85gTEgaV5Zyc
