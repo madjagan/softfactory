@@ -3,7 +3,7 @@
 **From idea to a product that keeps evolving — every change proposed with evidence,
 approved by you.**
 
-A spec-first development framework for Claude Code. It interviews you to turn an idea
+A product factory for Claude Code: idea → software → customers. It interviews you to turn an idea
 into a product summary, builds the repo from it, and then runs the
 **discover → setup → develop → deploy → grow → evolve** loop: feedback from real testers comes
 in through the tracker, Claude investigates and proposes a verdict or a dated amendment

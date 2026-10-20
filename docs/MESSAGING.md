@@ -15,14 +15,19 @@ Citations: a feature by its path, anything else as `file:line`. A ◐ item is al
 ## 1. Positioning
 
 > For solo founders and small agencies who ship real software with Claude Code to people who test
-> it and depend on it, softfactory is a spec-first framework that takes a product from idea to a
-> release that keeps evolving: every change is proposed with evidence and approved by you.
-> (README.md:3, README.md:6-12; personas: owner, 2026-10-20)
+> it and depend on it, softfactory is a product factory that takes a product from idea to
+> software to customers, and keeps it evolving: every change is proposed with evidence and
+> approved by you. (README.md:3, README.md:6-12; personas: owner, 2026-10-20)
+
+**Amendment (2026-10-20):** was "a spec-first framework that takes a product from idea to a release
+that keeps evolving"; now "a product factory … from idea to software to customers"; because the
+framework also helps sell the product (`/messaging`, `/sales-kit`, `/marketing-site`), and the owner
+chose to keep the name and widen the category line instead of renaming.
 
 | Length | Pitch |
 |---|---|
-| 10 seconds | softfactory lets Claude build your product the disciplined way, and it always shows you what is really done. |
-| 30 seconds | When Claude writes your code, it's hard to know what is really finished, tester feedback arrives everywhere at once, and the docs drift away from the product. softfactory installs a ledger and gated skills into your repo: a feature is done only when its test passes, testers file issues on a tracker where Claude proposes verdicts and humans close them, and every change to a requirement is a dated entry. |
+| 10 seconds | softfactory takes your product from idea to customers with Claude: built the disciplined way, sold on proof, and you always see what is really done. |
+| 30 seconds | When Claude writes your code, it's hard to know what is really finished, tester feedback arrives everywhere at once, and the docs drift away from the product. softfactory installs a ledger and gated skills into your repo: a feature is done only when its test passes, testers file issues on a tracker where Claude proposes verdicts and humans close them, and every change to a requirement is a dated entry. When it's ready, the same ledger writes your messaging, sales kit and home page. |
 | 2 minutes | The 30-second pitch, then the three pillars of the persona's house (§2), each with one proof, and the close: "It's free to install. If you want help setting it up on your project, that's what the paid setup is for." |
 
 ---

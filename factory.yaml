@@ -10,9 +10,10 @@ project:
   slug: softfactory
   owner: Madhavan Jagannathan
   summary: >
-    A spec-first development framework for Claude Code: skills, agents, hooks, templates and
-    lean apps that turn a product summary into a repo running the setup → develop → deploy →
-    evolve loop with a documents-as-ledger discipline.
+    A product factory for Claude Code, from idea to software to customers: skills, agents,
+    hooks, templates and lean apps that turn a product summary into a repo running the
+    discover → setup → develop → deploy → grow → evolve loop with a documents-as-ledger
+    discipline.
 
 stack:
   design_system:                          # none; the page defines its tokens in one :root block
@@ -24,7 +25,7 @@ docs:
 
 marketing:
   audience: Solo founders and small product teams building with Claude Code
-  headline: Software, built to *spec*.
+  headline: From idea to *customers*.
   primary_cta: Install
   primary_href: "#install"
   secondary_cta: See it in action

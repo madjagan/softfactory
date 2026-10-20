@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- page:start -->
 <title>softfactory</title>
-<meta name="description" content="A spec-first framework for Claude Code: dated requirements, failing tests first, gated delivery and a ledger that remembers every decision.">
+<meta name="description" content="A product factory for Claude Code, from idea to software to customers: dated requirements, failing tests first, gated releases, and sales material drawn from the same ledger.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -329,6 +329,17 @@ footer ul a { color: var(--text); text-decoration: none; }
 footer ul a:hover { color: var(--action); }
 .contact { font-family: var(--mono); font-size: 13px; color: var(--text); user-select: all; word-break: break-all; }
 .foot-base { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; font: 400 12px/1.5 var(--mono); color: var(--muted); }
+/* Why softfactory: the messaging house (docs/MESSAGING.md §2) */
+.pillars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 860px) { .pillars { grid-template-columns: minmax(0, 1fr); } }
+.pillar { border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; background: var(--surface); min-width: 0; }
+.pillar .pain { font: italic 400 1.05rem/1.4 var(--display); color: var(--muted); margin-bottom: 14px; }
+.pillar h3 { font-size: 1.35rem; margin-bottom: 8px; }
+.pillar p:last-child { color: var(--muted); font-size: 15px; }
+.also { margin-top: 22px; color: var(--muted); max-width: 70ch; }
+.also strong { color: var(--ink); font-weight: 600; }
+.price-note { margin-top: 18px; font-size: 14px; color: var(--muted); }
+.price-note strong { color: var(--ink); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -344,6 +355,7 @@ footer ul a:hover { color: var(--action); }
       softfactory
     </a>
     <nav class="nav-links" aria-label="Sections">
+      <a href="#why">Why</a>
       <a href="#loop">The loop</a>
       <a href="#trace">The ledger</a>
       <a href="#agents">Agents</a>
@@ -365,14 +377,14 @@ footer ul a:hover { color: var(--action); }
 <section class="hero" aria-labelledby="hero-title">
   <div class="wrap">
     <div>
-      <p class="eyebrow">A spec-first framework for Claude Code</p>
-      <h1 id="hero-title">Software, built to <em>spec</em>.</h1>
-      <p class="lede">softfactory turns a product summary into a repo that runs as one gated loop. Requirements are dated, every change starts with a failing test, nothing ships until the gates are green, and a ledger records every decision. Agents work the queues. People make the calls.</p>
+      <p class="eyebrow">A product factory for Claude Code</p>
+      <h1 id="hero-title">From idea to <em>customers</em>.</h1>
+      <p class="lede">When Claude writes your code, it's hard to know what is really finished, tester feedback arrives everywhere at once, and the docs drift away from the product. softfactory installs a ledger and gated skills into your repo: a feature is done only when its test passes, testers file issues where Claude proposes verdicts and people close them, and every change to a requirement is a dated entry. When it's ready, the same ledger writes your messaging, sales kit and home page.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="#install">Install</a>
         <a class="btn btn-ghost" href="#agents">See it in action</a>
       </div>
-      <p class="hero-note">Fifteen gated skills, five agents, an issue tracker, customer boards, a support desk and an ideas portal. One manifest configures them all.</p>
+      <p class="hero-note">Seventeen gated skills, five agents, an issue tracker, customer boards, a support desk and an ideas portal. One manifest configures them all.</p>
     </div>
 
     <div class="term" id="hero-term" aria-label="Example /create-feature run">
@@ -407,6 +419,34 @@ footer ul a:hover { color: var(--action); }
   </ul>
 </div>
 
+<section id="why" aria-labelledby="why-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Why softfactory</p>
+      <h2 id="why-title">Know what's <em>really</em> done, hear every tester, keep the docs true.</h2>
+      <p class="lede">Without hiring a QA team or a PM.</p>
+    </div>
+    <div class="pillars">
+      <article class="pillar">
+        <p class="pain">"Claude says it's finished. Is it?"</p>
+        <h3>Done means a test passes</h3>
+        <p>Every requirement is dated and gets a failing test first. A feature counts as done only when that test passes in the full gate.</p>
+      </article>
+      <article class="pillar">
+        <p class="pain">"Bug reports arrive by message and email."</p>
+        <h3>Every report gets a verdict</h3>
+        <p>Testers file issues with screenshots on your own tracker. Claude investigates and proposes a verdict; a person verifies and closes it, and the server enforces that.</p>
+      </article>
+      <article class="pillar">
+        <p class="pain">"The spec, the guides and the code disagree."</p>
+        <h3>Docs that can't drift</h3>
+        <p>A change to a requirement is a dated amendment, never a rewrite. User guides are regenerated from the feature list, and stale citations are caught.</p>
+      </article>
+    </div>
+    <p class="also"><strong>Building for clients?</strong> Get sign-off faster: a UAT plan in every proposal, a verdict on every finding, and a dated record of every change request.</p>
+  </div>
+</section>
+
 <section id="loop" aria-labelledby="loop-title">
   <div class="wrap">
     <div class="section-head">
@@ -421,7 +461,8 @@ footer ul a:hover { color: var(--action); }
         <button role="tab" id="tab-setup" aria-controls="panel-setup" aria-selected="false" tabindex="-1"><span class="n">02</span>Set up</button>
         <button role="tab" id="tab-develop" aria-controls="panel-develop" aria-selected="false" tabindex="-1"><span class="n">03</span>Develop</button>
         <button role="tab" id="tab-deploy" aria-controls="panel-deploy" aria-selected="false" tabindex="-1"><span class="n">04</span>Deploy</button>
-        <button role="tab" id="tab-evolve" aria-controls="panel-evolve" aria-selected="false" tabindex="-1"><span class="n">05</span>Evolve</button>
+        <button role="tab" id="tab-grow" aria-controls="panel-grow" aria-selected="false" tabindex="-1"><span class="n">05</span>Grow</button>
+        <button role="tab" id="tab-evolve" aria-controls="panel-evolve" aria-selected="false" tabindex="-1"><span class="n">06</span>Evolve</button>
       </div>
 
       <div class="panel" role="tabpanel" id="panel-discover" aria-labelledby="tab-discover">
@@ -461,6 +502,17 @@ footer ul a:hover { color: var(--action); }
         <p class="chain">tree identified → <b>every gate green</b> → deploy → smoke → <b>RELEASE_LOG.md</b></p>
       </div>
 
+      <div class="panel" role="tabpanel" id="panel-grow" aria-labelledby="tab-grow" hidden>
+        <h3>Say what it's worth, to the people who need it</h3>
+        <p>The ledger already knows who the product is for, what hurts them and what proves it works. Growth material is derived from it, every claim traced, and Claude only drafts: you send.</p>
+        <div class="skills">
+          <div class="skill"><code>/messaging</code><p>Positioning, pitches and a messaging house per persona: each pillar tied to a pain, a feature and its proof. Objections with sourced answers, and your pricing decisions.</p></div>
+          <div class="skill"><code>/sales-kit</code><p>For a persona or one prospect: a one-pager, a demo script, a discovery call guide, battlecards and a proposal with a UAT plan that prints to PDF.</p></div>
+          <div class="skill"><code>/marketing-site</code><p>Regenerates the product's home page from the ledger and the messaging, every claim traced, at the same link.</p></div>
+        </div>
+        <p class="chain"><b>MESSAGING.md</b> → home page · one-pager · demo · call guide · proposal → <b>you send</b></p>
+      </div>
+
       <div class="panel" role="tabpanel" id="panel-evolve" aria-labelledby="tab-evolve" hidden>
         <h3>Listen to testers and customers, and keep the docs true</h3>
         <p>Reports, tickets and ideas each have an agent that works the queue in its own context. Test material and user guides are regenerated from the feature list, never edited by hand.</p>
@@ -473,7 +525,6 @@ footer ul a:hover { color: var(--action); }
           <div class="skill"><code>/test-guide</code><p>A one-page tester's guide with control labels checked against the source.</p></div>
           <div class="skill"><code>/guide-screenshots</code><p>An annotated screenshot storyboard for a guide, and narrated videos on request.</p></div>
           <div class="skill"><code>/issues-dashboard</code><p>Classifies the issues log into the Issue Ledger page, at a link that never changes.</p></div>
-          <div class="skill"><code>/marketing-site</code><p>Regenerates the product's home page from the ledger, every claim traced, at the same link.</p></div>
         </div>
       </div>
     </div>
@@ -638,6 +689,13 @@ footer ul a:hover { color: var(--action); }
           <div class="mod"><b>/setup-project</b><p>Manifest, ledger, house rules, proven gates.</p></div>
           <div class="mod"><b>/create-feature</b><p>Dated requirement to green, logged feature.</p></div>
           <div class="mod"><b>/release</b><p>Gated deploy, smoke checks and release log.</p></div>
+        </div>
+      </div>
+      <div class="mod-group">
+        <h3>Grow</h3>
+        <div class="mods">
+          <div class="mod"><b>/messaging</b><p>Positioning, pitches and proven pillars per persona.</p></div>
+          <div class="mod"><b>/sales-kit</b><p>One-pager, demo, call guide, battlecards, proposal.</p></div>
           <div class="mod"><b>/marketing-site</b><p>The product's home page, derived from the ledger.</p></div>
         </div>
       </div>
@@ -734,6 +792,22 @@ footer ul a:hover { color: var(--action); }
         <p>A test that already passes before the change proves nothing about the change. Starting red shows the test can see the feature is missing; ending green shows it is there.</p>
       </details>
       <details>
+        <summary>Isn't this heavy process for one person?</summary>
+        <p>The interview and /setup-project write the ledger for you. After that, every step is a skill you ask for in plain language. Each rule is there because it fixed a problem in a production build.</p>
+      </details>
+      <details>
+        <summary>Does it lock me in?</summary>
+        <p>No. Everything is Markdown and scripts in your own repo, and install.sh --update refreshes the framework without touching your docs.</p>
+      </details>
+      <details>
+        <summary>Does it work with Cursor, Copilot or other agents?</summary>
+        <p>Not today. It is built on Claude Code's skills, agents and hooks.</p>
+      </details>
+      <details>
+        <summary>What does it cost?</summary>
+        <p>The framework is free. If you want help setting it up on your project, paid setup is available on request.</p>
+      </details>
+      <details>
         <summary>Where did the method come from?</summary>
         <p>It was extracted from a production HR system built this way over eleven weeks. The methodology and the evidence behind it are in METHODOLOGY_BRIEF.md.</p>
       </details>
@@ -751,6 +825,8 @@ footer ul a:hover { color: var(--action); }
         <a class="btn btn-primary" href="https://github.com/madjagan/softfactory">View on GitHub</a>
         <a class="btn btn-ghost" href="https://github.com/madjagan/softfactory/blob/main/README.md">Read the README</a>
       </div>
+      <!-- PLACEHOLDER contact address: factory.yaml marketing.contact is blank -->
+      <p class="price-note"><strong>The framework is free.</strong> Want help setting it up? Paid setup is on request: <a href="mailto:hello@softfactory.example">hello@softfactory.example</a></p>
     </div>
     <div class="cmd-box">
       <div class="cmd-bar"><span>terminal</span><button class="replay" type="button" id="copy-install">Copy</button></div>
@@ -780,7 +856,7 @@ footer ul a:hover { color: var(--action); }
           </svg>
           softfactory
         </a>
-        <p>A spec-first framework for Claude Code. Dated requirements, red-first tests, gated releases and a ledger that remembers.</p>
+        <p>A product factory for Claude Code, from idea to software to customers. Dated requirements, red-first tests, gated releases and a ledger that remembers.</p>
       </div>
       <div>
         <h4>Framework</h4>
