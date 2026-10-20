@@ -5,7 +5,7 @@ approved by you.**
 
 A spec-first development framework for Claude Code. It interviews you to turn an idea
 into a product summary, builds the repo from it, and then runs the
-**discover → setup → develop → deploy → evolve** loop: feedback from real testers comes
+**discover → setup → develop → deploy → grow → evolve** loop: feedback from real testers comes
 in through the tracker, Claude investigates and proposes a verdict or a dated amendment
 to the spec, and you decide. Nothing ships past a red gate, nothing on the board is
 closed by Claude, and every change to a requirement is a dated entry in the ledger — so
@@ -33,13 +33,18 @@ manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
      │
  DEPLOY    /release         tree identified → every gate green → deploy → smoke (health, asset type, version, login) → release log
      │
+ GROW      /marketing-site    the product's home page, derived from the ledger and the design system, at a stable URL
+           /messaging         ledger → positioning · pitches · messaging house per persona (pillar → pain → feature → proof)
+                              · objections · owner's pricing → docs/MESSAGING.md
+           /sales-kit         persona or prospect → one-pager · demo script · call guide · battlecards · proposal (→ PDF)
+                              · outreach drafts → docs/sales/ (gitignored; Claude drafts, you send)
+     │
  EVOLVE    /address-feedback  clarify → classify from evidence → dispatch one skill → close the register honestly
            /process-issues    Issue Agent (own context): tracker queue → screenshots → skills → verdict + human test steps (never closes)
            /test-pack         human test plan · exploratory charters · per-module coaching pack, derived from the feature list
            /test-guide        a one-page customer tester's guide for one module / feature / use case, labels verified in the source
            /guide-screenshots annotated screenshot storyboard for a guide (ring + pointer + caption), narrated videos on request
            /issues-dashboard  classify the issues log → Issue Ledger page at a stable URL
-           /marketing-site    the product's home page, derived from the ledger and the design system, at a stable URL
            docs-agent          answers "what does the product do"; owns and reconciles the per-persona user guides
            evaluator-assistant sits beside a human tester: expected behaviour, defect / by design / not built / UX finding
      │
@@ -67,7 +72,7 @@ framework without touching your ledger. `/product-interview` writes the product 
 | Path | What | Owner after install |
 |---|---|---|
 | `factory.example.yaml` | The manifest: name, stack, doc paths, commands per layer, personas, seed facts, tracker settings | project |
-| `.claude/skills/*` | Thirteen gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
+| `.claude/skills/*` | Fifteen gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
 | `tools/screenshots/` | Storyboard capture for tester guides: `stack.sh` (fresh stack from the manifest), `lib.mjs` (ring + pointer + caption, shoot-then-click), `capture.mjs`, `build_videos.py`; `app.config.mjs` and `storyboards/` are the project's | factory + project |
 | `.claude/agents/docs-agent.md` | Documentation authority; derives and reconciles user guides | factory |
 | `.claude/agents/evaluator-assistant.md` | Assistant to a non-developer tester | factory |
@@ -78,7 +83,7 @@ framework without touching your ledger. `/product-interview` writes the product 
 | `tools/issues_dashboard.py` | Issues log → classified JSON → Issue Ledger HTML | factory |
 | `tools/render_docs_site.py` | Internal docs site from the testing docs and the ledger | factory |
 | `issues/` | The tracker: FastAPI + SQLite + screenshots, tester / agent / admin roles, server-enforced state machine, 1-n split of a report into parts (owner-approved), optional status-only customer board with mirroring | factory |
-| `templates/` | CLAUDE.md, the docs ledger, CI workflow, classified JSON — filled by `/setup-project` | project |
+| `templates/` | CLAUDE.md, the docs ledger, CI workflow, classified JSON — filled by `/setup-project`; `sales/` one-pager and proposal skeletons for `/sales-kit` | project |
 | `deploy/docker-compose.issues.yml` | Two boards from one image, for internal deployments | project |
 
 ## The rules the framework enforces

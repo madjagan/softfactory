@@ -65,7 +65,7 @@ if [ "$MODE" != "--update" ]; then
   echo "project-owned (written once):"
   copy_if_absent "$HERE/factory.example.yaml" "$TARGET/factory.yaml"
   copy_if_absent "$HERE/templates/CLAUDE.md" "$TARGET/CLAUDE.md"
-  for f in PRODUCT_SUMMARY.md PRODUCT_REQUIREMENTS.md IMPLEMENTATION_PLAN.md issues_log.md FEATURE_LIST.md WHY_WE_NEED_TESTING.md TESTING_COMPANION.md TEST_PLAN_HUMAN.md RELEASE_LOG.md SEEDING.md user-guide/README.md; do
+  for f in PRODUCT_SUMMARY.md MESSAGING.md PRODUCT_REQUIREMENTS.md IMPLEMENTATION_PLAN.md issues_log.md FEATURE_LIST.md WHY_WE_NEED_TESTING.md TESTING_COMPANION.md TEST_PLAN_HUMAN.md RELEASE_LOG.md SEEDING.md user-guide/README.md; do
     copy_if_absent "$HERE/templates/docs/$f" "$TARGET/docs/$f"
   done
   copy_if_absent "$HERE/templates/issues_classified.json" "$TARGET/docs/issues_classified.json"
@@ -76,7 +76,7 @@ fi
 
 # .gitignore entries the factory needs
 GI="$TARGET/.gitignore"; touch "$GI"
-for line in "issues/data/" ".claude/.feature-list.sha" ".claude/settings.local.json" "build/docs-site/" "__pycache__/"; do
+for line in "issues/data/" ".claude/.feature-list.sha" ".claude/settings.local.json" "build/docs-site/" "__pycache__/" "docs/sales/"; do
   grep -qxF "$line" "$GI" || echo "$line" >> "$GI"
 done
 

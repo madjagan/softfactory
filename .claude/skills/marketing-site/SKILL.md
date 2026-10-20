@@ -14,7 +14,8 @@ Every claim on it comes from a file in the repo, and the skill can name that fil
 ledger changes, the page is regenerated. It is never hand-edited.
 
 Read first: `factory.yaml` (`product.*`, `stack.design_system`, `marketing.*`, `docs.*`),
-`CLAUDE.md`, and an existing `docs.marketing_site` if there is one. This framework's own page,
+`CLAUDE.md`, `docs.messaging` if `/messaging` has written it, and an existing
+`docs.marketing_site` if there is one. This framework's own page,
 `site/index.html` in the softfactory repo, is the reference build: it shows the section spine,
 the token block and the publish markers.
 
@@ -91,6 +92,9 @@ questions.
 Build a working table (kept in the session, not shipped): **claim → page section → source
 `file:line`**.
 
+- **Messaging** (`docs.messaging`, when present — it takes precedence over the summary for copy):
+  the roof → the hero subhead; the three pillars → the "why this" points, with their proofs; §3
+  objections → the FAQ; §4 pricing → a pricing section only if the owner set prices there.
 - **Product summary:** the jobs, pains and gains per persona → the hero subhead, the lifecycle
   tabs and the FAQ. Alternatives → the "why this" points. The stack → the trust strip.
 - **PRD:** the purpose and principles → the hero and the positioning. The acceptance criteria → the

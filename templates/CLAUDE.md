@@ -19,7 +19,7 @@ Testing: `{{test_unit}}` (fast suite) · `{{test_one}} <file>` (single file) ·
 
 ## The factory loop
 
-This repo runs the **setup → develop → deploy → evolve** loop with Claude Code skills.
+This repo runs the **setup → develop → deploy → grow → evolve** loop with Claude Code skills.
 Use them; do not go direct.
 
 | Want to… | Use |
@@ -33,6 +33,8 @@ Use them; do not go direct.
 | Ship | `/release` |
 | Refresh tester material | `/test-pack` · the Issue Ledger: `/issues-dashboard` |
 | Write user help for one subject | `/test-guide <subject>` → `docs/<SUBJECT>_TEST_GUIDE.md`; then `/guide-screenshots <guide>` for the storyboard and videos |
+| Say what the product is worth, to whom | `/messaging` → `docs/MESSAGING.md` · the home page: `/marketing-site` |
+| Sell to a persona or a prospect | `/sales-kit <persona \| prospect>` → `docs/sales/` (gitignored; drafts only) |
 | Ask what the product does | `docs-agent` subagent · help a tester: `evaluator-assistant` |
 
 ## Documentation (the ledger)
@@ -40,6 +42,9 @@ Use them; do not go direct.
 All project docs live in `docs/`; only this file stays at the root.
 - `docs/PRODUCT_SUMMARY.md` — personas, value proposition canvas, component tools, success
   metrics; written by `/product-interview`, the source the PRD was set up from.
+- `docs/MESSAGING.md` — positioning, a messaging house per persona, objections, the owner's
+  pricing; every sales page and document reads it (`/messaging`). `docs/sales/` holds sales
+  kits and is gitignored.
 - `docs/PRODUCT_REQUIREMENTS.md` — the PRD: dated `§3.N` sections, numbered acceptance criteria.
 - `docs/IMPLEMENTATION_PLAN.md` — one row per section with **its test file as the gate**;
   a section is complete only when that file passes in `{{verify}}`.

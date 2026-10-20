@@ -19,6 +19,8 @@ stack:
 
 docs:                                     # all relative to the repo root; these are the defaults
   product_summary: docs/PRODUCT_SUMMARY.md   # written by /product-interview
+  messaging: docs/MESSAGING.md         # written by /messaging; sales material reads it
+  sales: docs/sales                     # /sales-kit output; gitignored (prospect notes stay local)
   prd: docs/PRODUCT_REQUIREMENTS.md
   plan: docs/IMPLEMENTATION_PLAN.md
   issues_log: docs/issues_log.md

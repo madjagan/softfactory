@@ -12,7 +12,7 @@ metadata:
 You are turning a product summary (the invocation argument, a pasted brief, or a file the
 user points at; with no argument, `docs/PRODUCT_SUMMARY.md` as written by
 `/product-interview` — if that is still the unfilled template, offer to run the interview
-first) into a repo that runs the **setup → develop → deploy → evolve** loop. Run
+first) into a repo that runs the **setup → develop → deploy → grow → evolve** loop. Run
 the phases **in order**; each ends in a **gate**. Everything you write into a doc is a
 **dated entry** stamped with `date +%F` — never a guessed date.
 

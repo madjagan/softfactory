@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{project_name}} — {{persona_or_prospect}}</title>
+<style>
+/* Replace these tokens with the project's design system (stack.design_system) when it has one. */
+:root {
+  --paper: #ffffff; --surface: #f5f7fa; --ink: #15213b; --text: #1f2a40; --muted: #5b6579;
+  --line: #d6dce8; --accent: #0a7553; --accent-soft: #dcefe7;
+  --display: Georgia, "Iowan Old Style", serif;
+  --body: "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0c1322; --surface: #131c30; --ink: #e8edf7; --text: #d3dbea; --muted: #93a0b8;
+    --line: #26324a; --accent: #3fcf9b; --accent-soft: #12352b; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0c1322; --surface: #131c30; --ink: #e8edf7; --text: #d3dbea; --muted: #93a0b8;
+  --line: #26324a; --accent: #3fcf9b; --accent-soft: #12352b; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--text); font: 400 15px/1.55 var(--body); }
+.page { max-width: 760px; margin: 0 auto; padding: 40px 16px; }
+h1, h2 { font-family: var(--display); color: var(--ink); font-weight: 500; margin: 0; }
+h1 { font-size: clamp(26px, 5vw, 36px); line-height: 1.15; }
+.kicker { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+.sub { color: var(--muted); margin-top: 12px; font-size: 16px; }
+.pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 28px 0; }
+.pillar { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.pillar h2 { font-size: 18px; margin-bottom: 6px; }
+.pillar .pain { font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+.soon { display: inline-block; font-size: 12px; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; }
+figure { margin: 0 0 24px; }
+figure img { width: 100%; border: 1px solid var(--line); border-radius: 10px; display: block; }
+figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; border-top: 1px solid var(--line); padding-top: 20px; }
+.cta a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.cta span { color: var(--muted); font-size: 13px; }
+@media (max-width: 640px) { .pillars { grid-template-columns: 1fr; } }
+@page { size: auto; margin: 14mm; }
+@media print {
+  :root, :root[data-theme="dark"] {
+    --paper: #ffffff; --surface: #f5f7fa; --ink: #15213b; --text: #1f2a40; --muted: #5b6579;
+    --line: #d6dce8; --accent: #0a7553; --accent-soft: #dcefe7; color-scheme: light;
+  }
+  .page { padding: 0; max-width: none; }
+  .pillar, figure { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<!-- Sources for every claim on this page: {{sources}} -->
+<main class="page">
+  <p class="kicker">{{project_name}} · for {{persona_or_prospect}}</p>
+  <h1>{{roof}}</h1>
+  <p class="sub">{{pitch_30s}}</p>
+
+  <section class="pillars" aria-label="Why {{project_name}}">
+    <!-- one per pillar, ordered by the target's pains; a ◐ feature adds <span class="soon">in development — available soon</span> -->
+    <article class="pillar">
+      <p class="pain">{{pain_in_their_words}}</p>
+      <h2>{{pillar}}</h2>
+      <p>{{pillar_proof}}</p>
+    </article>
+  </section>
+
+  <figure>
+    <img src="{{storyboard_frame}}" alt="{{frame_alt}}">
+    <figcaption>Example: {{frame_caption}}</figcaption>
+  </figure>
+
+  <footer class="cta">
+    <a href="{{primary_href}}">{{primary_cta}}</a>
+    <span>{{contact}}</span>
+  </footer>
+</main>
+</body>
+</html>
