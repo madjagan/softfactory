@@ -12,7 +12,7 @@ project:
   summary: >
     A spec-first development framework for Claude Code: skills, agents, hooks, templates and
     lean apps that turn a product summary into a repo running the setup → develop → deploy →
-    maintain loop with a documents-as-ledger discipline.
+    evolve loop with a documents-as-ledger discipline.
 
 stack:
   design_system:                          # none; the page defines its tokens in one :root block

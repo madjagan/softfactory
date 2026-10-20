@@ -1,9 +1,18 @@
 # softfactory
 
-A spec-first development framework for Claude Code: the skills, agents, hooks,
-templates and a lean issue tracker that turn a **product summary** into a repo that
-runs the **setup → develop → deploy → maintain** loop with a documents-as-ledger
-discipline.
+**From idea to a product that keeps evolving — every change proposed with evidence,
+approved by you.**
+
+A spec-first development framework for Claude Code. It interviews you to turn an idea
+into a product summary, builds the repo from it, and then runs the
+**discover → setup → develop → deploy → evolve** loop: feedback from real testers comes
+in through the tracker, Claude investigates and proposes a verdict or a dated amendment
+to the spec, and you decide. Nothing ships past a red gate, nothing on the board is
+closed by Claude, and every change to a requirement is a dated entry in the ledger — so
+the product evolves, and you can always see why.
+
+What's inside: the skills, agents, hooks, templates and a lean issue tracker, kept
+honest by a documents-as-ledger discipline.
 
 Extracted from a production project (see `METHODOLOGY_BRIEF.md` for the methodology
 and the evidence behind it) and generalized: every project-specific value lives in one
@@ -24,7 +33,7 @@ manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
      │
  DEPLOY    /release         tree identified → every gate green → deploy → smoke (health, asset type, version, login) → release log
      │
- MAINTAIN  /address-feedback  clarify → classify from evidence → dispatch one skill → close the register honestly
+ EVOLVE    /address-feedback  clarify → classify from evidence → dispatch one skill → close the register honestly
            /process-issues    Issue Agent (own context): tracker queue → screenshots → skills → verdict + human test steps (never closes)
            /test-pack         human test plan · exploratory charters · per-module coaching pack, derived from the feature list
            /test-guide        a one-page customer tester's guide for one module / feature / use case, labels verified in the source
@@ -33,6 +42,8 @@ manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
            /marketing-site    the product's home page, derived from the ledger and the design system, at a stable URL
            docs-agent          answers "what does the product do"; owns and reconciles the per-persona user guides
            evaluator-assistant sits beside a human tester: expected behaviour, defect / by design / not built / UX finding
+     │
+     └──► evidence from testers and users → dated PRD amendment → you approve → back to DEVELOP
 ```
 
 ## Install into a project

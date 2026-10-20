@@ -19,7 +19,7 @@ Testing: `{{test_unit}}` (fast suite) · `{{test_one}} <file>` (single file) ·
 
 ## The factory loop
 
-This repo runs the **setup → develop → deploy → maintain** loop with Claude Code skills.
+This repo runs the **setup → develop → deploy → evolve** loop with Claude Code skills.
 Use them; do not go direct.
 
 | Want to… | Use |
