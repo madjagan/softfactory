@@ -2,7 +2,7 @@
 name: test-pack
 description: "Produce or refresh the human-testing material from the feature list and the PRD: the structured human test plan (one observable expectation per row, cited), the testing companion (what automation covers, what it cannot see, exploratory charters per module, the rule card), and a per-module tester coaching pack (single HTML with pass/fail toggles). Use when testers are about to start, when a module goes live, or after a batch of fixes. Triggers on: test pack, human test plan, coaching pack, UAT pack, tester material, exploratory charters, refresh the test plan, what should testers try."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "1.0"
   category: "quality"
 ---

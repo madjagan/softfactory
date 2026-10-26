@@ -2,7 +2,7 @@
 name: find-issues
 description: "Investigate whether a piece of functionality actually works: strategize a layered test plan, fold in the user's hunches as hypotheses to falsify, enumerate typical + boundary + negative + state + integration + permission cases, then write, code and EXECUTE tests to prove which issues are real. Diagnostic only — finds and proves defects, never fixes them (hand off to /fix-issue). Triggers on: does X actually work, test this thoroughly, find the issues, I have a hunch, is this wired up, verify the behaviour, audit this feature, probe for bugs, edge cases, what could break, sweep."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "2.0"
   category: "engineering"
 ---

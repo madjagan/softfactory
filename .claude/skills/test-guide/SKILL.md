@@ -2,15 +2,15 @@
 name: test-guide
 description: "Write a customer tester's guide for one module, feature or use case — logins and rules, numbered click-by-click steps in parts, exact control labels verified against the source, a must-be-refused table, how to repeat the test, where to report. One page, for a non-developer. Offers (never builds unasked) the screenshot storyboard and narrated videos via /guide-screenshots. Triggers on: test guide, tester's guide, how do I test X, steps for the customer, walkthrough for testers, user help for X, /test-guide."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "1.0"
   category: "documentation"
 ---
 
 # Test guide — one module, feature or use case, for the customer's tester
 
-The argument names the subject: a module (*Time Off*), a feature (*loan requests*) or a use
-case (*an employee resigns and is settled*). The output is **`docs/<SUBJECT>_TEST_GUIDE.md`**
+The argument names the subject: a module (*Invoices*), a feature (*bulk export*) or a use
+case (*a customer cancels and is refunded*). The output is **`docs/<SUBJECT>_TEST_GUIDE.md`**
 in the shape below (`templates/docs/TEST_GUIDE_TEMPLATE.md`; an existing guide in `docs/` is
 the standard of terseness — read one first). The reader is the customer's tester, not a
 developer: no code names, no internals, no reasoning. Every line is something to do or
@@ -30,8 +30,9 @@ section(s) for the subject, the feature-list rows, and the screen's source.
      it does, what it refuses, and why.
    - **The screen:** the page component(s), the sidebar route and its labels, the tab and
      button labels **as rendered** — grep the UI source for the exact text. A label the guide
-     gets wrong stops a tester cold (the source project's guide once said *Run payroll* for a
-     button that reads *Process Payroll*; the screenshot capture found it).
+     gets wrong stops a tester cold (a guide that says *Run export* for a button that reads
+     *Export now* leaves the tester looking for a button that isn't there; the screenshot capture
+     catches it).
    - **Who may do it:** the access map, the server gate on the route (which roles, which
      states), and the seeded logins for those roles (`personas` + the seed users).
    - **The rules that block:** calendar / sequence / lock / eligibility gates on the server.

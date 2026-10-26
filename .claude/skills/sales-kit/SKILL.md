@@ -2,7 +2,7 @@
 name: sales-kit
 description: "Produce sales material from the messaging ledger, for a persona (a reusable kit) or for one prospect (a tailored kit): a one-page leave-behind, a demo script whose steps come from the test guides with labels verified in the source, a discovery call guide built from the persona's jobs and pains, a battlecard per alternative, and a proposal with scope and a UAT plan drawn from the human test plan (HTML that prints to PDF). Prospect kits add an outreach email and two follow-ups. Written to docs/sales/ (gitignored). Every claim cites MESSAGING.md or the ledger; ◐ rows say 'in development — available soon'; nothing invented; Claude drafts, the owner sends. Triggers on: sales kit, one-pager, leave-behind, demo script, call guide, discovery questions, battlecard, proposal, outreach email, prospect, pitch to, /sales-kit."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "1.0"
   category: "growth"
 ---

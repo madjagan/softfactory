@@ -1,18 +1,24 @@
-# Issue tracker layer — INTERNAL deployments only. Two boards from one image:
+# Issue tracker layer — INTERNAL deployments only. One internal board plus ONE BOARD PER CUSTOMER,
+# all from one image:
 #
 #   docker compose -f deploy/docker-compose.issues.yml up -d --build
 #
-# {{slug}}-issues   — the internal board (testers + the Issue Agent), full analysis visible
-# {{slug}}-feedback — the customer board: own database, status only, no admin role;
-#                     the internal board mirrors it and pushes status back
+# {{slug}}-issues          — the internal board (testers + the Issue Agent), full analysis visible;
+#                            it syncs every board in FEEDBACK_BOARDS into its intake queue and pushes
+#                            status back
+# {{slug}}-feedback-<name> — one customer's board: own database, own token, own key prefix, status
+#                            only, no admin role. No customer ever sees another customer's reports.
 #
-# Put both behind your reverse proxy with basic auth (one user for /issues/, another for
-# /feedback/). Resolve upstreams per request (Docker DNS) so a recreated container that
-# takes another's IP does not receive its traffic; recreate, don't reload, when a
+# /setup-project writes one feedback-<name> service (and its volume, and its entry in
+# FEEDBACK_BOARDS) per entry in factory.yaml → issues.customer_boards. acme and globex below are
+# that list's example; add or remove a block per customer.
+#
+# Put each board behind your reverse proxy with basic auth (one user for /issues/, one per
+# customer for /feedback/<name>/). Resolve upstreams per request (Docker DNS) so a recreated
+# container that takes another's IP does not receive its traffic; recreate, don't reload, when a
 # single-file bind-mounted proxy config changes (the old inode stays mounted).
 #
-# .env: ISSUES_TOKEN, FEEDBACK_TOKEN (optional second gate inside each app),
-#       FEEDBACK_BRAND, FEEDBACK_PREFIX.
+# .env: ISSUES_TOKEN, and per customer FEEDBACK_TOKEN_<NAME> (optional second gate inside each app).
 services:
   issues:
     build:
@@ -26,31 +32,51 @@ services:
       - ISSUES_BRAND=${ISSUES_BRAND:-{{project_name}} · UAT}
       - ISSUES_MODULES=${ISSUES_MODULES:-}
       - ISSUES_PUSH_ACTOR=${ISSUES_PUSH_ACTOR:-{{project_name}}}
-      - FEEDBACK_SYNC_URL=http://{{slug}}-feedback:3002
-      - FEEDBACK_SYNC_TOKEN=${FEEDBACK_TOKEN:-}
+      - FEEDBACK_BOARDS=acme=http://{{slug}}-feedback-acme:3002,globex=http://{{slug}}-feedback-globex:3002
+      - FEEDBACK_TOKEN_ACME=${FEEDBACK_TOKEN_ACME:-}
+      - FEEDBACK_TOKEN_GLOBEX=${FEEDBACK_TOKEN_GLOBEX:-}
     volumes:
       - {{slug}}_issues_data:/data
     expose:
       - "3002"
 
-  feedback:
+  feedback-acme:
     build:
       context: ..
       dockerfile: issues/Dockerfile
-    container_name: {{slug}}-feedback
+    container_name: {{slug}}-feedback-acme
     restart: unless-stopped
     environment:
-      - ISSUES_TOKEN=${FEEDBACK_TOKEN:-}
-      - ISSUES_BRAND=${FEEDBACK_BRAND:-{{project_name}} · Feedback}
-      - ISSUES_PREFIX=${FEEDBACK_PREFIX:-FB}
+      - ISSUES_TOKEN=${FEEDBACK_TOKEN_ACME:-}
+      - ISSUES_BRAND={{project_name}} · Acme feedback
+      - ISSUES_PREFIX=ACME
       - ISSUES_MODULES=${ISSUES_MODULES:-}
-      - ISSUES_ROLES=tester,agent        # no admin on the customer board
+      - ISSUES_ROLES=tester,agent        # no admin on a customer board
       - ISSUES_CUSTOMER=1                 # status only: the analysis never leaves the server
     volumes:
-      - {{slug}}_feedback_data:/data
+      - {{slug}}_feedback_acme_data:/data
+    expose:
+      - "3002"
+
+  feedback-globex:
+    build:
+      context: ..
+      dockerfile: issues/Dockerfile
+    container_name: {{slug}}-feedback-globex
+    restart: unless-stopped
+    environment:
+      - ISSUES_TOKEN=${FEEDBACK_TOKEN_GLOBEX:-}
+      - ISSUES_BRAND={{project_name}} · Globex feedback
+      - ISSUES_PREFIX=GLX
+      - ISSUES_MODULES=${ISSUES_MODULES:-}
+      - ISSUES_ROLES=tester,agent
+      - ISSUES_CUSTOMER=1
+    volumes:
+      - {{slug}}_feedback_globex_data:/data
     expose:
       - "3002"
 
 volumes:
   {{slug}}_issues_data:
-  {{slug}}_feedback_data:
+  {{slug}}_feedback_acme_data:
+  {{slug}}_feedback_globex_data:

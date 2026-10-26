@@ -86,7 +86,26 @@ issues:                                   # the standalone tracker (issues/app.p
   brand: Acme Ledger · UAT
   push_actor: Acme Ledger                 # how the internal board signs status pushes to a customer board
   modules: [dashboard, records, reports, admin, auth, shell, api, data, infra]
-  customer_board: ""                      # base URL of the status-only customer board, if one runs
+  customer_boards:                        # one status-only board per customer; the internal board triages them all
+    - {name: acme, url: http://acme-ledger-feedback-acme:3002, prefix: ACME, brand: "Acme Ledger · Acme feedback"}
+    # name: short slug, used in report refs (acme/ACME-501), container names and FEEDBACK_TOKEN_ACME
+
+support:                                  # the support desk (support/app.py), one server for every org
+  url: http://127.0.0.1:3003              # where tools/support_cli.py finds it; override with SUPPORT_URL
+  prefix: SUP
+  brand: Acme Ledger · Support
+  orgs: [acme, globex]                    # one token per org: SUPPORT_TOKEN_<ORG> (env, never here)
+  widget_secret_env: SUPPORT_WIDGET_SECRET
+  auto_close_days: 7
+  categories: [question, how-to, defect, account, other]
+  tracker_url: http://acme-ledger-issues:3002   # escalations land in the tracker's intake; token: SUPPORT_TRACKER_TOKEN
+
+ideas:                                    # the ideas portal (ideas/app.py)
+  url: http://127.0.0.1:3004              # where tools/ideas_cli.py finds it; override with IDEAS_URL
+  prefix: IDEA
+  submission_prefix: IDR
+  brand: Acme Ledger · Ideas
+  orgs: [acme, globex]                    # tokens IDEAS_TOKEN_<ORG>; shares the org list with support
 
 release:
   version_cmd: node tools/version.mjs     # prints the version string to stamp; blank = read version_file

@@ -2,7 +2,7 @@
 name: messaging
 description: "Write or refresh the messaging ledger (docs.messaging, default docs/MESSAGING.md) from the product summary, the feature list and the PRD: the positioning and 10-second / 30-second / 2-minute pitches, a messaging house per primary persona (roof, three pillars each tied to a fit row, a tool, a feature row and its proof, words to use and avoid), objections with sourced answers, the owner's packaging and pricing decisions, and the proof inventory. Every sales page and document reads from it. Nothing invented: no customers, testimonials, counts, prices or competitor facts. Triggers on: messaging, positioning, value line, elevator pitch, messaging house, objections, pricing and packaging, what do we say to, /messaging."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "1.0"
   category: "growth"
 ---

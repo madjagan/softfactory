@@ -1,4 +1,4 @@
-# factory.yaml — softfactory's own manifest. Only what /marketing-site needs: this repo is the
+# factory.yaml — Solo Product Toolkit's own manifest. Only what /marketing-site needs: this repo is the
 # framework, not a project it manages, so it has no ledger. Stand-ins for the ledger:
 #   product summary + PRD  → README.md, METHODOLOGY_BRIEF.md
 #   feature list ●         → .claude/skills, .claude/agents, issues/, tools/, .claude/hooks
@@ -6,11 +6,11 @@
 # install.sh copies factory.example.yaml into projects, never this file.
 
 project:
-  name: softfactory
-  slug: softfactory
+  name: Solo Product Toolkit
+  slug: solo-product-toolkit
   owner: Madhavan Jagannathan
   summary: >
-    A product factory for Claude Code, from idea to software to customers: skills, agents,
+    A toolkit for Claude Code, from idea to software to customers: skills, agents,
     hooks, templates and lean apps that turn a product summary into a repo running the
     discover → setup → develop → deploy → grow → evolve loop with a documents-as-ledger
     discipline.
@@ -31,5 +31,5 @@ marketing:
   secondary_cta: See it in action
   secondary_href: "#agents"
   reference_url: ""
-  contact: ""                             # blank = flagged placeholder hello@softfactory.example
+  contact: ""                             # blank = flagged placeholder hello@solo-product-toolkit.example
   artifact_url: https://claude.ai/artifact/QWLs9QF3nu85gTEgaV5Zyc

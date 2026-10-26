@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code when working with code in this repository.
-It is the house-rules layer of the software factory: the manifest (`factory.yaml`) says
+It is the house-rules layer of the Solo Product Toolkit: the manifest (`factory.yaml`) says
 *what to run*; this file says *why things are the way they are*. Keep every rule with
 its reason; a rule without a reason gets deleted by the next reader.
 

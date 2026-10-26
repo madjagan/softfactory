@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the software factory into a target repo.
+# Install the Solo Product Toolkit into a target repo.
 #
 #   ./install.sh /path/to/repo            # copy skills, agents, hooks, tools, tracker, templates
 #   ./install.sh /path/to/repo --update   # refresh factory-owned files only; never touches
@@ -30,7 +30,7 @@ copy_if_absent() {  # copy_if_absent <src> <dst> — project-owned, written once
   if [ -e "$2" ]; then echo "  keep   ${2#$TARGET/}"; else mkdir -p "$(dirname "$2")"; cp "$1" "$2"; echo "  create ${2#$TARGET/}"; fi
 }
 
-echo "Installing the software factory into $TARGET"
+echo "Installing the Solo Product Toolkit into $TARGET"
 
 echo "factory-owned (refreshed):"
 copy_tree "$HERE/.claude/skills" "$TARGET/.claude/skills"
@@ -39,9 +39,12 @@ copy_tree "$HERE/.claude/hooks"  "$TARGET/.claude/hooks"
 chmod +x "$TARGET"/.claude/hooks/*.sh
 copy_tree "$HERE/tools"          "$TARGET/tools"
 copy_tree "$HERE/issues"         "$TARGET/issues"
+copy_tree "$HERE/support"        "$TARGET/support"
+copy_tree "$HERE/ideas"          "$TARGET/ideas"
 copy_tree "$HERE/templates"      "$TARGET/templates"
-mkdir -p "$TARGET/deploy"; cp "$HERE/deploy/docker-compose.issues.yml" "$TARGET/deploy/docker-compose.issues.yml"
-echo "  .claude/skills .claude/agents .claude/hooks tools/ issues/ templates/ deploy/docker-compose.issues.yml"
+mkdir -p "$TARGET/deploy"
+for f in issues support ideas; do cp "$HERE/deploy/docker-compose.$f.yml" "$TARGET/deploy/docker-compose.$f.yml"; done
+echo "  .claude/skills .claude/agents .claude/hooks tools/ issues/ support/ ideas/ templates/ deploy/docker-compose.{issues,support,ideas}.yml"
 
 # settings.json: merge the hook in without clobbering the project's own settings
 python3 - "$HERE/.claude/settings.json" "$TARGET/.claude/settings.json" <<'PY'
@@ -71,12 +74,12 @@ if [ "$MODE" != "--update" ]; then
   copy_if_absent "$HERE/templates/issues_classified.json" "$TARGET/docs/issues_classified.json"
   # screenshot capture: the app adapter and the example storyboard are the project's to edit
   copy_if_absent "$HERE/tools/screenshots/app.config.mjs" "$TARGET/tools/screenshots/app.config.mjs"
-  copy_if_absent "$HERE/tools/screenshots/storyboards/example-payroll.mjs" "$TARGET/tools/screenshots/storyboards/example-payroll.mjs"
+  copy_if_absent "$HERE/tools/screenshots/storyboards/example-invoices.mjs" "$TARGET/tools/screenshots/storyboards/example-invoices.mjs"
 fi
 
 # .gitignore entries the factory needs
 GI="$TARGET/.gitignore"; touch "$GI"
-for line in "issues/data/" ".claude/.feature-list.sha" ".claude/settings.local.json" "build/docs-site/" "__pycache__/" "docs/sales/"; do
+for line in "issues/data/" "support/data/" "ideas/data/" ".claude/.feature-list.sha" ".claude/settings.local.json" "build/docs-site/" "__pycache__/" "docs/sales/"; do
   grep -qxF "$line" "$GI" || echo "$line" >> "$GI"
 done
 

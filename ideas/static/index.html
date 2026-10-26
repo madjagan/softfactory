@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Ideas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Geist:wght@400;500;600&family=Azeret+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg:#F6FAF8; --card:#FFFFFF; --s2:#EEF4F0; --bd:#DFE8E2; --bd2:#C4D2C9;
+    --ink:#12261E; --t2:#2F4A3E; --t3:#5B7166; --t4:#7F938A;
+    --nav:#0A3D2F; --ac:#317A28; --as:rgba(49,122,40,.09); --mint:#8DF87D;
+    --gn:#067647; --gs:rgba(6,118,71,.10); --am:#B54708; --ams:rgba(181,71,8,.10);
+    --rd:#B42318; --rs:rgba(180,35,24,.10); --vi:#5B4AB8; --vs:rgba(91,74,184,.10);
+    --scrim:rgba(5,41,31,.45);
+    --sh1:0 1px 2px rgba(10,61,47,.06), 0 1px 8px rgba(10,61,47,.05);
+    --sh3:0 12px 40px rgba(10,61,47,.18);
+    --sf:'Fraunces', Georgia, serif; --sn:'Geist', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; --mn:'Azeret Mono', 'SF Mono', Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#0B1712; --card:#10221A; --s2:#152C22; --bd:#1F3A2E; --bd2:#2C4C3D;
+    --ink:#E6F0EA; --t2:#C3D4CA; --t3:#93A89C; --t4:#6F8478;
+    --nav:#0F3A2C; --ac:#7CCB6E; --as:rgba(124,203,110,.14);
+    --gn:#5FC98F; --gs:rgba(95,201,143,.14); --am:#E39A4C; --ams:rgba(227,154,76,.14);
+    --rd:#EF6E62; --rs:rgba(239,110,98,.14); --vi:#A99BF2; --vs:rgba(169,155,242,.14);
+    --scrim:rgba(0,0,0,.6); --sh1:0 1px 2px rgba(0,0,0,.3); --sh3:0 12px 40px rgba(0,0,0,.5);
+  } }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:var(--sn); font-size:14px; line-height:1.5; margin:0; }
+  button, input, select, textarea { font:inherit; color:inherit; }
+  .mono { font-family:var(--mn); font-variant-numeric:tabular-nums; }
+  .wrap { max-width:1180px; margin:0 auto; padding:26px 22px 80px; }
+  header.top { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .eyebrow { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--t4); }
+  h1 { font-family:var(--sf); font-weight:500; font-size:30px; letter-spacing:-0.01em; margin:2px 0 0; line-height:1.1; }
+  h1 em { font-style:italic; color:var(--ac); }
+  h2.sec { font-family:var(--sf); font-weight:500; font-size:20px; margin:26px 0 10px; }
+  .sub { color:var(--t3); font-size:12.5px; margin-top:6px; }
+  .btn { border-radius:8px; padding:8px 14px; border:1.5px solid var(--bd2); background:var(--card); cursor:pointer; font-weight:500; font-size:13px; line-height:1.2; }
+  .btn:hover { background:var(--s2); }
+  .btn.primary { background:linear-gradient(180deg,#3E8F33,#2C6E24); color:#fff; border-color:transparent; }
+  .btn.soft { background:var(--as); color:var(--ac); border-color:transparent; }
+  .btn.danger { background:var(--rs); color:var(--rd); border-color:transparent; }
+  .btn.sm { padding:5px 10px; font-size:12px; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline:2px solid var(--mint); outline-offset:1px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 14px; }
+  .chip { border-radius:20px; padding:4px 11px; border:1px solid var(--bd); background:var(--card); cursor:pointer; font-size:12px; }
+  .chip.on { border-color:var(--ac); background:var(--as); color:var(--ac); }
+  input[type=text], input[type=password], select, textarea { border:1.5px solid var(--bd2); border-radius:12px; padding:8px 11px; background:var(--card); font-size:13px; width:100%; }
+  textarea { min-height:90px; resize:vertical; }
+  label.f { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--t3); margin:12px 0 5px; }
+  .card { background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:14px 16px; margin:10px 0; overflow-wrap:anywhere; }
+  .card h3 { margin:0 0 6px; font-size:15px; font-weight:600; }
+  .card .k { font-family:var(--mn); font-size:11px; color:var(--t4); }
+  .desc { white-space:pre-wrap; color:var(--t2); font-size:13.5px; }
+  .row { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  .pill { display:inline-block; font-size:10.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; padding:2px 8px; border-radius:20px; border:1px solid var(--bd2); color:var(--t3); background:var(--s2); white-space:nowrap; }
+  .pill.go { color:var(--gn); background:var(--gs); border-color:rgba(6,118,71,.3); }
+  .pill.wait { color:var(--ac); background:var(--as); border-color:rgba(49,122,40,.3); }
+  .pill.no { color:var(--am); background:var(--ams); border-color:rgba(181,71,8,.3); }
+  .notice { border-left:3px solid var(--ac); padding:6px 10px; margin-top:8px; background:var(--as); border-radius:6px; font-size:13px; }
+  .vote { min-width:84px; text-align:center; }
+  .vote b { display:block; font-family:var(--mn); font-size:18px; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--bd); border-radius:12px; overflow:hidden; font-size:13px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--bd); }
+  th { font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--t4); font-weight:600; }
+  th.s { cursor:pointer; } th.s.on { color:var(--ac); }
+  td.n, th.n { text-align:right; font-family:var(--mn); }
+  tbody tr { cursor:pointer; } tbody tr:hover { background:var(--s2); }
+  .tablewrap { overflow-x:auto; }
+  .scrim { position:fixed; inset:0; background:var(--scrim); z-index:20; }
+  .drawer { position:fixed; top:0; right:0; bottom:0; width:min(700px,100vw); background:var(--bg); border-left:1px solid var(--bd); box-shadow:var(--sh3); z-index:21; overflow-y:auto; padding:22px 24px 60px; overflow-wrap:anywhere; }
+  .drawer h2 { font-family:var(--sf); font-weight:500; font-size:22px; margin:6px 0 4px; }
+  .close { position:absolute; right:14px; top:12px; }
+  .meta { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12px; color:var(--t3); margin:8px 0 14px; align-items:center; }
+  .kv { display:grid; grid-template-columns:130px 1fr; gap:6px 12px; font-size:13px; }
+  .kv .l { color:var(--t4); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; padding-top:2px; }
+  .kv > * { min-width:0; }
+  .timeline { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; font-size:12.5px; }
+  .timeline .at { font-family:var(--mn); font-size:11px; color:var(--t4); margin-right:8px; }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; }
+  .hint { font-size:12px; color:var(--t4); }
+  .shots { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .shots img { width:150px; height:100px; object-fit:cover; border:1px solid var(--bd); border-radius:8px; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--nav); color:#fff; padding:10px 16px; border-radius:10px; font-size:13px; z-index:40; }
+  .modal { position:fixed; inset:0; display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; z-index:30; background:var(--scrim); }
+  .modal .box { background:var(--bg); border:1px solid var(--bd); border-radius:16px; width:min(560px,100%); padding:22px 24px; }
+  .modal h2 { font-family:var(--sf); font-weight:500; font-size:22px; margin:0 0 4px; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow" id="brand">Ideas</div>
+      <h1>Ideas <em id="viewName">portal</em></h1>
+      <div class="sub" id="sub">Loading…</div>
+    </div>
+    <button class="btn sm" id="whoBtn" title="Change who you are">…</button>
+  </header>
+
+  <section id="portal" hidden>
+    <div class="card">
+      <label class="f" for="pText">What would you like the product to do?</label>
+      <textarea id="pText" placeholder="Describe what you are trying to get done and what gets in the way."></textarea>
+      <label class="f" for="pShots">Screenshots (optional)</label>
+      <input type="file" id="pShots" accept="image/png,image/jpeg,image/gif,image/webp" multiple>
+      <div class="actions"><button class="btn primary" id="pSubmit">Send idea</button><span class="hint">Only your organisation and the product team see what you write.</span></div>
+    </div>
+    <h2 class="sec">Ideas you can vote on</h2>
+    <div id="pIdeas"></div>
+    <h2 class="sec">Your organisation's requests</h2>
+    <div id="pMine"></div>
+  </section>
+
+  <section id="product" hidden>
+    <div class="chips" id="tabs">
+      <button class="chip on" data-tab="ideas">Ideas</button>
+      <button class="chip" data-tab="intake">Intake</button>
+      <button class="chip" data-tab="log">Log what you heard</button>
+    </div>
+    <div id="tab-ideas" class="tablewrap"></div>
+    <div id="tab-intake" hidden></div>
+    <div id="tab-log" hidden>
+      <div class="card">
+        <label class="f" for="lText">What was asked for</label><textarea id="lText"></textarea>
+        <label class="f" for="lOrg">On behalf of (optional)</label><select id="lOrg"><option value="">No org</option></select>
+        <div class="actions"><button class="btn primary" id="lSubmit">Log submission</button><span class="hint">Logged under your name, source internal. Never shown to customers.</span></div>
+      </div>
+    </div>
+  </section>
+</div>
+<div id="drawerHost"></div>
+<div id="modalHost"></div>
+<script>
+(function () {
+  const STONE = { shipped: 'go', 'already available': 'go', planned: 'wait', 'in development': 'wait', 'not planned': 'no' };
+  const state = { meta: null, me: '', token: '', role: 'customer', sort: 'orgs', blobs: {} };
+  const $ = (s, r) => (r || document).querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const day = iso => iso ? String(iso).slice(0, 10) : '';
+  const pill = word => `<span class="pill ${STONE[word] || ''}">${esc(word)}</span>`;
+  let toastT = null;
+  function toast(msg) { let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); } t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
+  try { state.me = localStorage.getItem('ideas.me') || ''; state.token = localStorage.getItem('ideas.token') || ''; state.role = localStorage.getItem('ideas.role') || 'customer'; } catch (e) {}
+
+  async function api(path, opts = {}) {
+    const headers = Object.assign({ 'X-Actor': state.me, 'X-Role': state.role }, opts.headers || {});
+    if (state.token) headers['X-Ideas-Token'] = state.token;
+    if (opts.json !== undefined) { headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(opts.json); }
+    const r = await fetch(path, Object.assign({}, opts, { headers }));
+    if (opts.blob) { if (!r.ok) throw new Error(r.statusText); return r.blob(); }
+    let data = null; try { data = await r.json(); } catch (e) {}
+    if (!r.ok) { const err = new Error((data && data.error) || r.statusText); err.status = r.status; throw err; }
+    return data;
+  }
+  // Screenshots need the token header, so they load through fetch rather than a bare <img src>.
+  const shots = ids => (ids || []).length ? `<div class="shots">${ids.map(id => `<img data-shot="${esc(id)}" alt="screenshot">`).join('')}</div>` : '';
+  async function loadShots(root) {
+    for (const img of root.querySelectorAll('img[data-shot]')) {
+      const id = img.dataset.shot;
+      try { state.blobs[id] = state.blobs[id] || URL.createObjectURL(await api('uploads/' + encodeURIComponent(id), { blob: true })); img.src = state.blobs[id]; } catch (e) {}
+    }
+  }
+  async function uploadAll(files) {
+    const ids = [];
+    for (const f of files) { const fd = new FormData(); fd.append('file', f); ids.push((await api('api/uploads', { method: 'POST', body: fd })).id); }
+    return ids;
+  }
+
+  function askIdentity(msg) {
+    $('#modalHost').innerHTML = `<div class="modal"><div class="box" role="dialog" aria-label="Who are you">
+      <h2>Who are you?</h2><div class="hint">${esc(msg || 'Your name goes on what you send and the votes you cast.')}</div>
+      <label class="f" for="iName">Name</label><input type="text" id="iName" value="${esc(state.me)}" placeholder="e.g. Priya">
+      <label class="f" for="iToken">Access token</label><input type="password" id="iToken" value="${esc(state.token)}">
+      <label class="f" for="iRole">I am</label><select id="iRole">
+        <option value="customer" ${state.role === 'customer' ? 'selected' : ''}>A customer (org token)</option>
+        <option value="product" ${state.role === 'product' ? 'selected' : ''}>The product team</option>
+        <option value="admin" ${state.role === 'admin' ? 'selected' : ''}>Admin</option></select>
+      <div class="actions" style="margin-top:16px"><button class="btn primary" id="iOk">Continue</button></div></div></div>`;
+    $('#iOk').onclick = () => {
+      state.me = $('#iName').value.trim(); state.token = $('#iToken').value.trim(); state.role = $('#iRole').value;
+      if (!state.me) { $('#iName').focus(); return; }
+      try { localStorage.setItem('ideas.me', state.me); localStorage.setItem('ideas.token', state.token); localStorage.setItem('ideas.role', state.role); } catch (e) {}
+      $('#modalHost').innerHTML = ''; boot();
+    };
+    setTimeout(() => $('#iName').focus(), 50);
+  }
+  $('#whoBtn').onclick = () => askIdentity();
+
+  async function boot() {
+    if (!state.me) return askIdentity();
+    try { state.meta = await api('api/meta'); }
+    catch (e) { return askIdentity(e.status === 401 || e.status === 403 ? e.message : 'Could not reach the portal: ' + e.message); }
+    $('#brand').textContent = state.meta.brand; document.title = state.meta.brand;
+    $('#whoBtn').textContent = state.me;
+    const isCustomer = state.role === 'customer';
+    $('#portal').hidden = !isCustomer; $('#product').hidden = isCustomer;
+    $('#viewName').textContent = isCustomer ? 'portal' : 'product view';
+    if (isCustomer) { $('#sub').textContent = `You are ${state.me} · ${state.meta.actor.org}`; return renderPortal(); }
+    $('#sub').textContent = `You are ${state.me} · ${state.role}`;
+    $('#lOrg').innerHTML = '<option value="">No org</option>' + state.meta.orgs.map(o => `<option>${esc(o)}</option>`).join('');
+    renderIdeas(); renderIntake();
+  }
+
+  // ---------- portal ----------
+  async function renderPortal() {
+    const [ideas, mine] = await Promise.all([api('api/portal/ideas'), api('api/portal/submissions')]);
+    $('#pIdeas').innerHTML = ideas.length ? ideas.map(i => `<div class="card row">
+        <div style="flex:1 1 300px"><span class="k">${esc(i.key)}</span> ${pill(i.status)}<h3>${esc(i.title)}</h3><div class="desc">${esc(i.description)}</div>
+        ${i.statusNote ? `<div class="notice">${esc(i.statusNote)}</div>` : ''}</div>
+        <button class="btn vote ${i.voted ? 'soft' : ''}" data-vote="${esc(i.key)}" aria-pressed="${i.voted}"><b>${i.votes}</b>${i.voted ? 'Voted' : 'Vote'}</button></div>`).join('')
+      : '<div class="hint">Nothing published yet.</div>';
+    $('#pMine').innerHTML = mine.length ? mine.map(s => `<div class="card">
+        <div class="row"><span class="k">${esc(s.key)} · ${esc(s.requester)} · ${day(s.createdAt)}</span>${pill(s.status)}</div>
+        <div class="desc">${esc(s.text)}</div>${shots(s.screenshots)}
+        ${s.idea ? `<div class="hint">Tracked as ${esc(s.idea.key)} — ${esc(s.idea.title)}</div>` : ''}
+        ${s.notices.map(n => `<div class="notice">${esc(n.text)} <span class="hint">${day(n.sentAt)}</span></div>`).join('')}</div>`).join('')
+      : '<div class="hint">Nothing sent yet.</div>';
+    loadShots($('#pMine'));
+  }
+  $('#pIdeas').addEventListener('click', async e => {
+    const b = e.target.closest('[data-vote]'); if (!b) return;
+    try { await api(`api/portal/ideas/${encodeURIComponent(b.dataset.vote)}/vote`, { method: 'POST' }); renderPortal(); } catch (err) { toast(err.message); }
+  });
+  $('#pSubmit').onclick = async () => {
+    const text = $('#pText').value.trim(); if (text.length < 3) { $('#pText').focus(); return; }
+    try {
+      const ids = await uploadAll($('#pShots').files);
+      await api('api/portal/submissions', { method: 'POST', json: { text, screenshots: ids } });
+      $('#pText').value = ''; $('#pShots').value = ''; toast('Thanks — the product team will read it.'); renderPortal();
+    } catch (err) { toast(err.message); }
+  };
+
+  // ---------- product view ----------
+  $('#tabs').addEventListener('click', e => {
+    const b = e.target.closest('[data-tab]'); if (!b) return;
+    document.querySelectorAll('#tabs .chip').forEach(c => c.classList.toggle('on', c === b));
+    ['ideas', 'intake', 'log'].forEach(t => { $('#tab-' + t).hidden = t !== b.dataset.tab; });
+  });
+  async function renderIdeas() {
+    const rows = await api('api/ideas?sort=' + state.sort);
+    const cols = [['orgs', 'Orgs'], ['people', 'People'], ['votes', 'Votes'], ['tickets', 'Tickets'], ['issues', 'Issues']];
+    $('#tab-ideas').innerHTML = rows.length ? `<table><thead><tr><th>Key</th><th>Idea</th><th>Status</th>${cols.map(([k, l]) => `<th class="s n ${state.sort === k ? 'on' : ''}" data-sort="${k}">${l}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(i => `<tr data-idea="${esc(i.key)}"><td class="mono">${esc(i.key)}</td><td>${esc(i.title)}${i.public ? ' <span class="pill go">public</span>' : ''}${(i.recommendations || []).length && ['new', 'under_review'].includes(i.status) ? ' <span class="pill no">agent recommends</span>' : ''}</td>
+        <td>${esc(i.status.replace('_', ' '))}</td>${cols.map(([k]) => `<td class="n">${i.demand[k]}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+      : '<div class="hint">No ideas yet. Promote a submission from Intake.</div>';
+  }
+  $('#tab-ideas').addEventListener('click', e => {
+    const s = e.target.closest('[data-sort]'); if (s) { state.sort = s.dataset.sort; return renderIdeas(); }
+    const r = e.target.closest('[data-idea]'); if (r) openIdea(r.dataset.idea);
+  });
+  const subCard = s => `<div class="card"><div class="k">${esc(s.key)} · ${esc(s.source)}${s.sourceRef ? ' ' + esc(s.sourceRef) : ''} · ${esc(s.org || 'no org')} · ${esc(s.requester)} · ${day(s.createdAt)}</div><div class="desc">${esc(s.text)}</div>${shots(s.screenshots)}`;
+  async function renderIntake() {
+    const [subs, ideas] = await Promise.all([api('api/submissions?intake=true'), api('api/ideas')]);
+    const opts = ideas.filter(i => i.status !== 'merged').map(i => `<option value="${esc(i.key)}">${esc(i.key)} — ${esc(i.title)}</option>`).join('');
+    $('#tab-intake').innerHTML = subs.length ? subs.map(s => subCard(s) + `<div class="actions">
+        <select data-to="${esc(s.key)}" style="width:auto;max-width:320px">${opts}</select><button class="btn sm" data-attach="${esc(s.key)}" ${opts ? '' : 'disabled'}>Attach</button>
+        <input type="text" data-title="${esc(s.key)}" placeholder="New idea title" style="width:auto;flex:1"><button class="btn sm soft" data-promote="${esc(s.key)}">Promote</button></div></div>`).join('')
+      : '<div class="hint">Intake is empty.</div>';
+    loadShots($('#tab-intake'));
+  }
+  $('#tab-intake').addEventListener('click', async e => {
+    const a = e.target.closest('[data-attach]'), p = e.target.closest('[data-promote]');
+    try {
+      if (a) await api(`api/submissions/${a.dataset.attach}/attach`, { method: 'POST', json: { idea: $(`[data-to="${a.dataset.attach}"]`).value } });
+      else if (p) await api(`api/submissions/${p.dataset.promote}/promote`, { method: 'POST', json: { title: $(`[data-title="${p.dataset.promote}"]`).value.trim() } });
+      else return;
+      renderIntake(); renderIdeas();
+    } catch (err) { toast(err.message); }
+  });
+  $('#lSubmit').onclick = async () => {
+    try { await api('api/submissions', { method: 'POST', json: { source: 'internal', org: $('#lOrg').value, text: $('#lText').value.trim() } }); $('#lText').value = ''; toast('Logged in intake.'); renderIntake(); }
+    catch (err) { toast(err.message); }
+  };
+
+  async function openIdea(key) {
+    let i; try { i = await api('api/ideas/' + encodeURIComponent(key)); } catch (e) { toast(e.message); return; }
+    const d = i.demand, pd = i.publicDraft || {}, pub = i.public;
+    const kv = rows => `<div class="kv">${rows.filter(r => r[1]).map(([l, v]) => `<span class="l">${l}</span><span>${esc(v)}</span>`).join('')}</div>`;
+    const deciding = ['new', 'under_review'].includes(i.status);
+    $('#drawerHost').innerHTML = `<div class="scrim" id="scrim"></div><div class="drawer" role="dialog" aria-label="Idea ${esc(i.key)}">
+      <button class="btn sm close" id="dclose">Close ✕</button>
+      <div class="eyebrow mono">${esc(i.key)}</div><h2>${esc(i.title)}</h2>
+      <div class="meta"><span class="pill">${esc(i.status.replace('_', ' '))}</span><span>${d.orgs} orgs · ${d.people} people · ${d.votes} votes · ${d.tickets} tickets · ${d.issues} issues</span></div>
+      <div class="card">${kv([['Problem', i.problem], ['PRD §', i.prdRef], ['Feature', i.featureId], ['Merged into', i.mergedInto]])}</div>
+      ${(i.recommendations || []).length ? `<div class="card"><h3>The agent recommends</h3>${i.recommendations.map(r => `<div class="desc">${esc(r.kind)}${r.featureId ? ' → ' + esc(r.featureId) : ''}${r.mergedInto ? ' → ' + esc(r.mergedInto) : ''}: ${esc(r.note)}</div>`).join('')}</div>` : ''}
+      <div class="card"><h3>Public face ${pub ? '<span class="pill go">published ' + day(pub.publishedAt) + '</span>' : ''}</h3>
+        <label class="f" for="pubT">Public title</label><input type="text" id="pubT" value="${esc((pub || pd).title || '')}">
+        <label class="f" for="pubD">Public description</label><textarea id="pubD">${esc((pub || pd).description || '')}</textarea>
+        <div class="hint">No customer names, orgs or wording: the server refuses them.</div>
+        ${i.status !== 'merged' ? '<div class="actions"><button class="btn primary" id="aPublish">' + (pub ? 'Republish' : 'Publish') + '</button></div>' : ''}</div>
+      ${deciding ? `<div class="card"><h3>Decide</h3>
+        <div class="actions"><input type="text" id="aPrd" placeholder="PRD § from /create-feature, e.g. 3.14" style="flex:1"><button class="btn primary" id="aAccept">Accept</button></div>
+        <div class="actions"><input type="text" id="aWhy" placeholder="Why (internal)" style="flex:1"><input type="text" id="aPublic" placeholder="Reason customers see${pub ? ' (required)' : ''}" style="flex:1"><button class="btn danger" id="aDecline">Decline</button></div>
+        <div class="actions"><input type="text" id="aFeat" placeholder="AREA-NN" style="flex:1"><button class="btn" id="aBuilt">Already built</button></div>
+        <div class="actions"><input type="text" id="aInto" placeholder="Merge into IDEA-n" style="flex:1"><button class="btn" id="aMerge">Merge</button></div></div>` : ''}
+      ${(i.drafts || []).length ? `<div class="card"><h3>Notices</h3>${i.drafts.map((x, n) => `<div class="notice"><b class="mono">${esc(x.to)}</b> ${esc(x.text)}
+        <div class="actions">${x.sentAt ? `<span class="hint">Sent ${day(x.sentAt)}</span>` : `<button class="btn sm primary" data-send="${n}">Send</button>`}</div></div>`).join('')}</div>` : ''}
+      <div class="card"><h3>Submissions (${i.submissionDocs.length})</h3>${i.submissionDocs.map(s => subCard(s) + '</div>').join('') || '<div class="hint">None.</div>'}</div>
+      ${i.voters.length ? `<div class="card"><h3>Voters</h3><div class="desc">${i.voters.map(v => esc(v.org + ' · ' + v.user)).join('\n')}</div></div>` : ''}
+      <div class="card"><h3>History</h3><ul class="timeline">${i.history.slice().reverse().map(h => `<li><span class="at">${esc(String(h.at).slice(0, 16).replace('T', ' '))}</span>${esc(h.by)}${h.from !== h.to ? ` · ${esc(h.from || '∅')} → ${esc(h.to)}` : ''}${h.note ? ' · ' + esc(h.note) : ''}${h.citation ? ' · ' + esc(h.citation) : ''}</li>`).join('')}</ul></div></div>`;
+    loadShots($('#drawerHost'));
+    const close = () => { $('#drawerHost').innerHTML = ''; };
+    $('#dclose').onclick = close; $('#scrim').onclick = close;
+    const act = async (path, json) => { try { await api(`api/ideas/${encodeURIComponent(key)}/${path}`, { method: 'POST', json }); renderIdeas(); renderIntake(); openIdea(key); } catch (e) { toast(e.message); } };
+    const on = (id, fn) => { const el = $('#' + id); if (el) el.onclick = fn; };
+    on('aPublish', () => act('publish', { title: $('#pubT').value.trim(), description: $('#pubD').value.trim() }));
+    on('aAccept', () => act('transition', { to: 'accepted', prdRef: $('#aPrd').value.trim() }));
+    on('aDecline', () => act('transition', { to: 'declined', note: $('#aWhy').value.trim(), statusNote: $('#aPublic').value.trim() }));
+    on('aBuilt', () => act('transition', { to: 'already_built', featureId: $('#aFeat').value.trim() }));
+    on('aMerge', () => act('transition', { to: 'merged', mergedInto: $('#aInto').value.trim() }));
+    $('#drawerHost').querySelectorAll('[data-send]').forEach(b => { b.onclick = () => act(`drafts/${b.dataset.send}/send`, {}); });
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

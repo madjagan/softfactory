@@ -1,9 +1,9 @@
-# softfactory
+# Solo Product Toolkit
 
 **From idea to a product that keeps evolving — every change proposed with evidence,
 approved by you.**
 
-A product factory for Claude Code: idea → software → customers. It interviews you to turn an idea
+A toolkit for Claude Code: idea → software → customers. It interviews you to turn an idea
 into a product summary, builds the repo from it, and then runs the
 **discover → setup → develop → deploy → grow → evolve** loop: feedback from real testers comes
 in through the tracker, Claude investigates and proposes a verdict or a dated amendment
@@ -14,8 +14,8 @@ the product evolves, and you can always see why.
 What's inside: the skills, agents, hooks, templates and a lean issue tracker, kept
 honest by a documents-as-ledger discipline.
 
-Extracted from a production project (see `METHODOLOGY_BRIEF.md` for the methodology
-and the evidence behind it) and generalized: every project-specific value lives in one
+The method behind it is written down in `METHODOLOGY_BRIEF.md`: the actors, the ledger, the
+gated skills and the issue loop. Every project-specific value lives in one
 manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
 
 ## The loop
@@ -40,7 +40,9 @@ manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
                               · outreach drafts → docs/sales/ (gitignored; Claude drafts, you send)
      │
  EVOLVE    /address-feedback  clarify → classify from evidence → dispatch one skill → close the register honestly
-           /process-issues    Issue Agent (own context): tracker queue → screenshots → skills → verdict + human test steps (never closes)
+           /process-issues    Issue Agent (own context): customer reports → intake → attach / promote; tracker queue → screenshots → skills → verdict + human test steps (never closes)
+           /process-tickets   Support Agent (own context, on demand): ticket queue → guides · logs · PRD → cited DRAFTS (never sends); defects escalate to the tracker
+           /process-ideas     Ideas Agent (own context): portal · tracker · support → ideas → ledger statuses → notice drafts (never decides)
            /test-pack         human test plan · exploratory charters · per-module coaching pack, derived from the feature list
            /test-guide        a one-page customer tester's guide for one module / feature / use case, labels verified in the source
            /guide-screenshots annotated screenshot storyboard for a guide (ring + pointer + caption), narrated videos on request
@@ -54,8 +56,8 @@ manifest, `factory.yaml`, which every skill, agent, hook and tool reads.
 ## Install into a project
 
 ```bash
-git clone <this repo> softfactory
-./softfactory/install.sh /path/to/your/repo
+git clone <this repo> solo-product-toolkit
+./solo-product-toolkit/install.sh /path/to/your/repo
 cd /path/to/your/repo
 claude          # then:  /product-interview   (writes docs/PRODUCT_SUMMARY.md)
                 #        /setup-project       (reads it; or pass a summary or a path to one)
@@ -72,7 +74,7 @@ framework without touching your ledger. `/product-interview` writes the product 
 | Path | What | Owner after install |
 |---|---|---|
 | `factory.example.yaml` | The manifest: name, stack, doc paths, commands per layer, personas, seed facts, tracker settings | project |
-| `.claude/skills/*` | Fifteen gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
+| `.claude/skills/*` | Seventeen gated pipelines (see the loop above). Same anatomy each: prime directive, principles, phases with gates, definition of done, anti-patterns | factory |
 | `tools/screenshots/` | Storyboard capture for tester guides: `stack.sh` (fresh stack from the manifest), `lib.mjs` (ring + pointer + caption, shoot-then-click), `capture.mjs`, `build_videos.py`; `app.config.mjs` and `storyboards/` are the project's | factory + project |
 | `.claude/agents/docs-agent.md` | Documentation authority; derives and reconciles user guides | factory |
 | `.claude/agents/evaluator-assistant.md` | Assistant to a non-developer tester | factory |
@@ -82,9 +84,14 @@ framework without touching your ledger. `/product-interview` writes the product 
 | `tools/issues_cli.py` | The Issue Agent's client for the tracker | factory |
 | `tools/issues_dashboard.py` | Issues log → classified JSON → Issue Ledger HTML | factory |
 | `tools/render_docs_site.py` | Internal docs site from the testing docs and the ledger | factory |
-| `issues/` | The tracker: FastAPI + SQLite + screenshots, tester / agent / admin roles, server-enforced state machine, 1-n split of a report into parts (owner-approved), optional status-only customer board with mirroring | factory |
+| `issues/` | The tracker: FastAPI + SQLite + screenshots, tester / agent / admin roles, server-enforced state machine, 1-n split of a report into parts (owner-approved), one status-only board per customer whose reports land in an intake queue and are triaged onto shared internal issues | factory |
 | `templates/` | CLAUDE.md, the docs ledger, CI workflow, classified JSON — filled by `/setup-project`; `sales/` one-pager and proposal skeletons for `/sales-kit` | project |
-| `deploy/docker-compose.issues.yml` | Two boards from one image, for internal deployments | project |
+| `deploy/docker-compose.issues.yml` | The internal board plus one feedback board per customer, from one image, for internal deployments | project |
+| `support/` | The support desk: FastAPI + SQLite + screenshots, one server for every org (token per org), customer / support / agent / admin roles, drafts, server-enforced state machine, in-app widget with signed tokens, auto-close, escalation into the tracker's intake | factory |
+| `ideas/` | The ideas portal: FastAPI + SQLite, one server for every org (org tokens), portal + product views, votes, demand, server-enforced state machine | factory |
+| `.claude/agents/issue-agent.md` · `support-agent.md` · `ideas-agent.md` | The agents behind `/process-issues`, `/process-tickets`, `/process-ideas`: they propose and draft; people verify, send and decide | factory |
+| `tools/issues_cli.py` · `support_cli.py` · `ideas_cli.py` | Each agent's client for its app | factory |
+| `deploy/docker-compose.support.yml` · `docker-compose.ideas.yml` | The support desk and the ideas portal, one server each for every org | project |
 
 ## The rules the framework enforces
 
@@ -98,14 +105,16 @@ framework without touching your ledger. `/product-interview` writes the product 
 8. **Design seams for testability**: a clock seam, twin engines with parity tests, fresh seeds, guard tests. Third instance of a bug class → a guard test.
 9. **Humans explore, automation checks.** Rule card, charters, report shape; every discovery returns as a test.
 10. **Role separation on the board.** The Issue Agent proposes verdicts with human-test steps; humans verify and close; product decisions stay with the owner.
-11. **Money, statutory and access changes are business decisions.** Confirm first.
+11. **Money, legal and access changes are business decisions.** Confirm first.
 12. **Real dates from the shell**; the app clock and the doc clock are never mixed.
 13. **Write down the why**, tersely, everywhere.
 
 ## Developing the framework itself
 
 ```bash
-python3 -m pytest issues/tests -q            # the tracker's state machine
+python3 -m pytest issues/tests -q            # the tracker's state machine, intake and per-customer boards
+python3 -m pytest support/tests -q           # the support desk: org isolation, drafts, state machine, escalation
+python3 -m pytest ideas/tests -q             # the ideas portal: isolation, state machine, ledger sync
 python3 tools/factory.py --help
 ./install.sh /tmp/some-empty-dir && (cd /tmp/some-empty-dir && python3 tools/factory.py check)
 ```

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- page:start -->
-<title>softfactory</title>
-<meta name="description" content="A product factory for Claude Code, from idea to software to customers: dated requirements, failing tests first, gated releases, and sales material drawn from the same ledger.">
+<title>Solo Product Toolkit</title>
+<meta name="description" content="A toolkit for Claude Code, from idea to software to customers: dated requirements, failing tests first, gated releases, and sales material drawn from the same ledger.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -202,13 +202,35 @@ section { padding-block: clamp(56px, 8vw, 96px); }
 .skill p { font-size: 14px; color: var(--muted); margin-top: 6px; }
 .chain { margin-top: 18px; font: 400 13px/1.7 var(--mono); color: var(--muted); overflow-x: auto; white-space: nowrap; padding-bottom: 4px; }
 .chain b { color: var(--ink); font-weight: 500; }
+.flow { list-style: none; margin: 0 0 clamp(36px, 5vw, 56px); padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 28px; counter-reset: stage; }
+.flow li { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.flow li::before { counter-increment: stage; content: "0" counter(stage); font: 500 12px/1 var(--mono); color: var(--muted); }
+.flow li:not(:last-child)::after { content: "\2192"; position: absolute; right: -22px; top: 50%; transform: translateY(-50%); font: 500 18px/1 var(--mono); color: var(--action); }
+.flow h3 { font-size: 1.15rem; line-height: 1.2; }
+.flow h3 button { all: unset; cursor: pointer; }
+.flow h3 button:hover { color: var(--action); }
+.flow h3 button:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; border-radius: 4px; }
+.flow .cmds { font: 500 12px/1.5 var(--mono); color: var(--action); overflow-wrap: anywhere; }
+.flow p { font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+.flow .out { margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--line); font: 400 11.5px/1.5 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.flow .out b { color: var(--ink); font-weight: 500; }
+.flow-back { grid-column: 1 / -1; margin: -12px 0 0; padding: 12px 16px; border: 1px dashed var(--action); border-radius: var(--radius); background: var(--action-soft); color: var(--ink); font-size: 14px; }
+.flow li.flow-back { display: block; }
+.flow li.flow-back::before, .flow li:nth-last-child(2)::after { content: none; }
+.flow-back .n { color: var(--action); margin-right: 6px; }
+.flow-hint { font: 400 12px/1.5 var(--mono); color: var(--muted); margin: -8px 0 18px; }
+@media (max-width: 1000px) {
+  .flow { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  .flow li:not(:last-child)::after { content: "\2193"; right: auto; left: 50%; top: auto; bottom: -22px; transform: translateX(-50%); }
+  .flow-back { margin-top: 0; }
+}
 
 /* stats */
 .stats { background: var(--term-bg); color: var(--term-fg); --stat-fg: var(--term-fg); --stat-muted: var(--term-dim); }
 .stats .eyebrow { color: var(--stat-muted); }
 .stats h2 { color: var(--stat-fg); font-size: clamp(1.7rem, 3vw, 2.3rem); max-width: 26ch; margin-bottom: clamp(28px, 4vw, 44px); }
 .stats h2 em { color: var(--term-green); }
-.stat-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border-top: 1px solid rgba(255, 255, 255, 0.14); }
+.stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid rgba(255, 255, 255, 0.14); }
 @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .stat { padding: 22px 18px 6px 0; }
 .stat .n { display: block; font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 500; color: var(--stat-fg); letter-spacing: -0.02em; line-height: 1.1; }
@@ -329,7 +351,7 @@ footer ul a { color: var(--text); text-decoration: none; }
 footer ul a:hover { color: var(--action); }
 .contact { font-family: var(--mono); font-size: 13px; color: var(--text); user-select: all; word-break: break-all; }
 .foot-base { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; font: 400 12px/1.5 var(--mono); color: var(--muted); }
-/* Why softfactory: the messaging house (docs/MESSAGING.md §2) */
+/* Why Solo Product Toolkit: the messaging house (docs/MESSAGING.md §2) */
 .pillars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 @media (max-width: 860px) { .pillars { grid-template-columns: minmax(0, 1fr); } }
 .pillar { border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; background: var(--surface); min-width: 0; }
@@ -346,13 +368,13 @@ footer ul a:hover { color: var(--action); }
 
 <header class="nav">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="softfactory home">
+    <a class="brand" href="#top" aria-label="Solo Product Toolkit home">
       <svg class="brand-mark" viewBox="0 0 22 22" aria-hidden="true">
         <rect x="1" y="1" width="20" height="20" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/>
         <path d="M6 15.5h10M6 11h10M6 6.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         <circle cx="15.5" cy="6.5" r="2" fill="var(--action)"/>
       </svg>
-      softfactory
+      Solo Product Toolkit
     </a>
     <nav class="nav-links" aria-label="Sections">
       <a href="#why">Why</a>
@@ -377,9 +399,9 @@ footer ul a:hover { color: var(--action); }
 <section class="hero" aria-labelledby="hero-title">
   <div class="wrap">
     <div>
-      <p class="eyebrow">A product factory for Claude Code</p>
+      <p class="eyebrow">A toolkit for Claude Code</p>
       <h1 id="hero-title">From idea to <em>customers</em>.</h1>
-      <p class="lede">When Claude writes your code, it's hard to know what is really finished, tester feedback arrives everywhere at once, and the docs drift away from the product. softfactory installs a ledger and gated skills into your repo: a feature is done only when its test passes, testers file issues where Claude proposes verdicts and people close them, and every change to a requirement is a dated entry. When it's ready, the same ledger writes your messaging, sales kit and home page.</p>
+      <p class="lede">When Claude writes your code, it's hard to know what is really finished, tester feedback arrives everywhere at once, and the docs drift away from the product. Solo Product Toolkit installs a ledger and gated skills into your repo: a feature is done only when its test passes, testers file issues where Claude proposes verdicts and people close them, and every change to a requirement is a dated entry. When it's ready, the same ledger writes your messaging, sales kit and home page.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="#install">Install</a>
         <a class="btn btn-ghost" href="#agents">See it in action</a>
@@ -422,7 +444,7 @@ footer ul a:hover { color: var(--action); }
 <section id="why" aria-labelledby="why-title">
   <div class="wrap">
     <div class="section-head">
-      <p class="eyebrow">Why softfactory</p>
+      <p class="eyebrow">Why Solo Product Toolkit</p>
       <h2 id="why-title">Know what's <em>really</em> done, hear every tester, keep the docs true.</h2>
       <p class="lede">Without hiring a QA team or a PM.</p>
     </div>
@@ -454,6 +476,47 @@ footer ul a:hover { color: var(--action); }
       <h2 id="loop-title">From the first interview to the <em>thousandth</em> fix.</h2>
       <p class="lede">Each stage is a skill with the same shape: a prime directive, phases that end in gates, a definition of done and a list of anti-patterns. The stages hand off through the ledger, so nothing depends on anyone remembering.</p>
     </div>
+
+    <p class="flow-hint">Idea to market in six stages. Select a stage for its skills.</p>
+    <ol class="flow" aria-label="From deciding what to build to marketing what was built">
+      <li>
+        <h3><button type="button" data-tab="discover">Decide what to build</button></h3>
+        <span class="cmds">/product-interview<br>/process-ideas</span>
+        <p>Interview the owner on personas, pains and fit. Requests from every source become ideas, ranked by demand.</p>
+        <span class="out">writes <b>PRODUCT_SUMMARY.md</b> · ideas</span>
+      </li>
+      <li>
+        <h3><button type="button" data-tab="setup">Gather requirements</button></h3>
+        <span class="cmds">/setup-project<br>/create-feature</span>
+        <p>Each requirement is a dated PRD section with acceptance criteria. A change is an amendment, never a rewrite.</p>
+        <span class="out">writes <b>PRD</b> · plan · feature list</span>
+      </li>
+      <li>
+        <h3><button type="button" data-tab="develop">Build</button></h3>
+        <span class="cmds">/create-feature<br>/fix-issue</span>
+        <p>A failing acceptance test first, then the smallest change that turns it green, then the full gate.</p>
+        <span class="out">writes code · tests · <b>issues log</b></span>
+      </li>
+      <li>
+        <h3><button type="button" data-tab="evolve">Test</button></h3>
+        <span class="cmds">/process-issues<br>/test-pack</span>
+        <p>Testers file with screenshots. The Issue Agent investigates and gives a verdict; a person verifies.</p>
+        <span class="out">writes <b>verdicts</b> · test plan</span>
+      </li>
+      <li>
+        <h3><button type="button" data-tab="deploy">Release</button></h3>
+        <span class="cmds">/release</span>
+        <p>Ships only when every gate is green, then smoke-tests the live instance and records what shipped.</p>
+        <span class="out">writes <b>RELEASE_LOG.md</b></span>
+      </li>
+      <li>
+        <h3><button type="button" data-tab="grow">Market</button></h3>
+        <span class="cmds">/messaging<br>/sales-kit<br>/marketing-site</span>
+        <p>Positioning, sales material and the home page, drawn from the ledger with every claim traced.</p>
+        <span class="out">writes <b>MESSAGING.md</b> · home page</span>
+      </li>
+      <li class="flow-back" aria-label="Feedback loop"><span class="n">&#8634;</span>Customers answer back through support tickets, the ideas portal and their own issue board, and that feeds stage 01.</li>
+    </ol>
 
     <div class="tabs">
       <div class="tablist" role="tablist" aria-label="Lifecycle stages">
@@ -533,16 +596,14 @@ footer ul a:hover { color: var(--action); }
 
 <section class="stats" aria-labelledby="stats-title">
   <div class="wrap">
-    <p class="eyebrow">Extracted from production</p>
-    <h2 id="stats-title">Built from eleven weeks of shipping a real HR system <em>this way</em>.</h2>
+    <p class="eyebrow">In the box</p>
+    <h2 id="stats-title">Everything one person needs to run a product <em>this way</em>.</h2>
     <div class="stat-grid">
-      <div class="stat"><span class="n">524</span><span>commits in the evidence window</span></div>
-      <div class="stat"><span class="n">167</span><span>dated PRD sections</span></div>
-      <div class="stat"><span class="n">419</span><span>issues-log entries, each with its root cause</span></div>
-      <div class="stat"><span class="n">~5,000</span><span>automated tests across frontend, backend and end-to-end</span></div>
-      <div class="stat"><span class="n">321</span><span>tests that pinned a known defect until it was fixed</span></div>
+      <div class="stat"><span class="n">17</span><span>gated skills, each ending in a gate it cannot skip</span></div>
+      <div class="stat"><span class="n">5</span><span>agents that propose while people decide</span></div>
+      <div class="stat"><span class="n">101</span><span>tests across the tracker, support desk and ideas portal</span></div>
     </div>
-    <p class="source">Source: METHODOLOGY_BRIEF.md · evidence window 2026-07-08 → 2026-09-23</p>
+    <p class="source">Source: docs/MESSAGING.md §5 · tests passing on 2026-10-20</p>
   </div>
 </section>
 
@@ -603,7 +664,7 @@ footer ul a:hover { color: var(--action); }
           <div class="agent"><h3>docs-agent</h3><p>Owns the per-persona user guides. Cites every claim, and reconciles the guides whenever the feature list changes.</p></div>
           <div class="agent"><h3>evaluator-assistant</h3><p>Sits beside a human tester. Says what a screen should do, and whether what they saw is a defect, by design, not built yet or a UX finding.</p></div>
         </div>
-        <div class="rule"><b>Agents propose. People decide.</b>Money, statutory and access changes are business decisions and are always confirmed first.</div>
+        <div class="rule"><b>Agents propose. People decide.</b>Money, legal and access changes are business decisions and are always confirmed first.</div>
       </div>
 
       <div class="term run" id="run-term" aria-label="Replayed Issue Agent run">
@@ -781,7 +842,7 @@ footer ul a:hover { color: var(--action); }
       </details>
       <details>
         <summary>What will Claude do without asking?</summary>
-        <p>It writes tests, fixes and drafts through the gated skills. It never verifies or closes an issue, never sends anything to a customer, never commits unless asked, and confirms money, statutory and access changes first.</p>
+        <p>It writes tests, fixes and drafts through the gated skills. It never verifies or closes an issue, never sends anything to a customer, never commits unless asked, and confirms money, legal and access changes first.</p>
       </details>
       <details>
         <summary>How are customers kept apart?</summary>
@@ -793,7 +854,7 @@ footer ul a:hover { color: var(--action); }
       </details>
       <details>
         <summary>Isn't this heavy process for one person?</summary>
-        <p>The interview and /setup-project write the ledger for you. After that, every step is a skill you ask for in plain language. Each rule is there because it fixed a problem in a production build.</p>
+        <p>The interview and /setup-project write the ledger for you. After that, every step is a skill you ask for in plain language.</p>
       </details>
       <details>
         <summary>Does it lock me in?</summary>
@@ -808,8 +869,8 @@ footer ul a:hover { color: var(--action); }
         <p>The framework is free. If you want help setting it up on your project, paid setup is available on request.</p>
       </details>
       <details>
-        <summary>Where did the method come from?</summary>
-        <p>It was extracted from a production HR system built this way over eleven weeks. The methodology and the evidence behind it are in METHODOLOGY_BRIEF.md.</p>
+        <summary>Where is the method written down?</summary>
+        <p>In METHODOLOGY_BRIEF.md: the actors, the ledger, the gated skills, the testing and the issue loop. Every skill, agent and hook implements one part of it.</p>
       </details>
     </div>
   </div>
@@ -826,13 +887,13 @@ footer ul a:hover { color: var(--action); }
         <a class="btn btn-ghost" href="https://github.com/madjagan/softfactory/blob/main/README.md">Read the README</a>
       </div>
       <!-- PLACEHOLDER contact address: factory.yaml marketing.contact is blank -->
-      <p class="price-note"><strong>The framework is free.</strong> Want help setting it up? Paid setup is on request: <a href="mailto:hello@softfactory.example">hello@softfactory.example</a></p>
+      <p class="price-note"><strong>The framework is free.</strong> Want help setting it up? Paid setup is on request: <a href="mailto:hello@solo-product-toolkit.example">hello@solo-product-toolkit.example</a></p>
     </div>
     <div class="cmd-box">
       <div class="cmd-bar"><span>terminal</span><button class="replay" type="button" id="copy-install">Copy</button></div>
 <pre id="install-cmds"><span class="c"># get the framework and install it into your repo</span>
-<span class="p">$</span> git clone https://github.com/madjagan/softfactory.git
-<span class="p">$</span> ./softfactory/install.sh /path/to/your/repo
+<span class="p">$</span> git clone https://github.com/madjagan/softfactory.git solo-product-toolkit
+<span class="p">$</span> ./solo-product-toolkit/install.sh /path/to/your/repo
 
 <span class="c"># then, inside Claude Code in that repo</span>
 <span class="p">$</span> cd /path/to/your/repo &amp;&amp; claude
@@ -854,9 +915,9 @@ footer ul a:hover { color: var(--action); }
             <path d="M6 15.5h10M6 11h10M6 6.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
             <circle cx="15.5" cy="6.5" r="2" fill="var(--action)"/>
           </svg>
-          softfactory
+          Solo Product Toolkit
         </a>
-        <p>A product factory for Claude Code, from idea to software to customers. Dated requirements, red-first tests, gated releases and a ledger that remembers.</p>
+        <p>A toolkit for Claude Code, from idea to software to customers. Dated requirements, red-first tests, gated releases and a ledger that remembers.</p>
       </div>
       <div>
         <h4>Framework</h4>
@@ -892,13 +953,13 @@ footer ul a:hover { color: var(--action); }
           <li><a href="#agents">Agents</a></li>
           <li><a href="#faq">FAQ</a></li>
           <!-- PLACEHOLDER contact address: replace before publishing -->
-          <li><span class="contact">hello@softfactory.example</span></li>
+          <li><span class="contact">hello@solo-product-toolkit.example</span></li>
         </ul>
       </div>
     </div>
     <div class="foot-base">
-      <span>softfactory</span>
-      <span>Built with softfactory, on Claude Code</span>
+      <span>Solo Product Toolkit</span>
+      <span>Built with Solo Product Toolkit, on Claude Code</span>
     </div>
   </div>
 </footer>
@@ -925,6 +986,13 @@ footer ul a:hover { color: var(--action); }
       document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
     });
   }
+  document.querySelectorAll(".flow [data-tab]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var tab = document.getElementById("tab-" + b.getAttribute("data-tab"));
+      select(tab);
+      tab.focus();
+    });
+  });
   tabs.forEach(function (tab, i) {
     tab.addEventListener("click", function () { select(tab); });
     tab.addEventListener("keydown", function (e) {

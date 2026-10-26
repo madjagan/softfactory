@@ -2,7 +2,7 @@
 name: address-feedback
 description: "Address a piece of user feedback end-to-end: read the actual report → clarify (surface, persona, expected, observed, desired) → classify from evidence (unproven / bug / modification / feature / no-change) → dispatch to exactly one skill (/find-issues, /fix-issue, /create-feature) → close the loop in the register it came from. Use whenever someone hands you a user report, suggestion, complaint or feedback id and wants it dealt with properly. Triggers on: address this feedback, handle this report, a user says, someone reported, triage this, close this feedback, user complaint, user suggestion, act on feedback."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "2.0"
   category: "engineering"
 ---
@@ -35,7 +35,7 @@ issues-log entries (this may be a reopen).
 2. **Clarify cheaply, don't diagnose.** Root-causing is `/fix-issue`; test strategy is
    `/find-issues`. Do the minimum observation needed to pick the class.
 3. **Ask only when a wrong reading changes the work** — one `AskUserQuestion` with options.
-4. **Money, statutory and access changes are business decisions.** Confirm before dispatch.
+4. **Money, legal and access changes are business decisions.** Confirm before dispatch.
 5. **Never invent a date.** Doc entries: `date +%F`. Register writes: the app's own clock
    (if `seed.narrative_date` is set, the app stamps with it — match it).
 6. **Delegate noisy searches.**

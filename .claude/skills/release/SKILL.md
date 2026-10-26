@@ -2,7 +2,7 @@
 name: release
 description: "Ship the current state through the gates: confirm the tree is what you think it is, run the full verify gate, run the deploy command from factory.yaml, smoke the deployed instance, stamp the release log with what shipped (issues-log entries and PRD sections since the last release), and refresh the derived pages. Refuses on any red gate. Triggers on: release, deploy, ship it, redeploy, push to production, roll out, what shipped, cut a release."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "1.0"
   category: "operations"
 ---

@@ -2,7 +2,7 @@
 name: product-interview
 description: "Interview the product owner on the command line and write the product summary that /setup-project consumes: personas, Osterwalder's value proposition canvas per primary persona (jobs to be done, pains, gains → products & services, pain relievers, gain creators, fit), the component tools, inspiration and alternatives, 3-month success metrics, stack and deploy. Pushes back on vague answers, plays every section back for confirmation, writes docs/PRODUCT_SUMMARY.md as it goes and resumes from it. Triggers on: product interview, write the product summary, discover the product, value proposition, jobs to be done, pains and gains, who is this for, interview me about the product, before setup-project."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "1.0"
   category: "product"
 ---

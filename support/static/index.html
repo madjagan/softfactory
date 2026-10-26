@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Support</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Geist:wght@400;500;600&family=Azeret+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg:#F6FAF8; --card:#FFFFFF; --s2:#EEF4F0; --bd:#DFE8E2; --bd2:#C4D2C9;
+    --ink:#12261E; --t2:#2F4A3E; --t3:#5B7166; --t4:#7F938A;
+    --nav:#0A3D2F; --ac:#317A28; --as:rgba(49,122,40,.09); --mint:#8DF87D;
+    --gn:#067647; --gs:rgba(6,118,71,.10); --am:#B54708; --ams:rgba(181,71,8,.10);
+    --rd:#B42318; --rs:rgba(180,35,24,.10); --vi:#5B4AB8; --vs:rgba(91,74,184,.10);
+    --scrim:rgba(5,41,31,.45);
+    --sh3:0 12px 40px rgba(10,61,47,.18);
+    --sf:'Fraunces', Georgia, serif; --sn:'Geist', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; --mn:'Azeret Mono', 'SF Mono', Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#0B1712; --card:#10221A; --s2:#152C22; --bd:#1F3A2E; --bd2:#2C4C3D;
+    --ink:#E6F0EA; --t2:#C3D4CA; --t3:#93A89C; --t4:#6F8478;
+    --nav:#0F3A2C; --ac:#7CCB6E; --as:rgba(124,203,110,.14);
+    --gn:#5FC98F; --gs:rgba(95,201,143,.14); --am:#E39A4C; --ams:rgba(227,154,76,.14);
+    --rd:#EF6E62; --rs:rgba(239,110,98,.14); --vi:#A99BF2; --vs:rgba(169,155,242,.14);
+    --scrim:rgba(0,0,0,.6); --sh3:0 12px 40px rgba(0,0,0,.5);
+  } }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:var(--sn); font-size:14px; line-height:1.5; margin:0; }
+  button, input, select, textarea { font:inherit; color:inherit; }
+  .mono { font-family:var(--mn); font-variant-numeric:tabular-nums; }
+  .wrap { max-width:1180px; margin:0 auto; padding:26px 16px 80px; }
+  header.top { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .eyebrow { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--t4); }
+  h1 { font-family:var(--sf); font-weight:500; font-size:30px; letter-spacing:-0.01em; margin:2px 0 0; line-height:1.1; }
+  h1 em { font-style:italic; color:var(--ac); }
+  .sub { color:var(--t3); font-size:12.5px; margin-top:6px; }
+  .btn { border-radius:8px; padding:8px 14px; border:1.5px solid var(--bd2); background:var(--card); cursor:pointer; font-weight:500; font-size:13px; line-height:1.2; }
+  .btn:hover { background:var(--s2); }
+  .btn.primary { background:linear-gradient(180deg,#3E8F33,#2C6E24); color:#fff; border-color:transparent; }
+  .btn.soft { background:var(--as); color:var(--ac); border-color:transparent; }
+  .btn.danger { background:var(--rs); color:var(--rd); border-color:transparent; }
+  .btn.sm { padding:5px 10px; font-size:12px; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline:2px solid var(--mint); outline-offset:1px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 14px; }
+  .chip { border-radius:20px; padding:4px 11px; border:1px solid var(--bd); background:var(--card); cursor:pointer; font-size:12px; display:inline-flex; gap:6px; align-items:center; }
+  .chip .n { font-family:var(--mn); font-size:11px; color:var(--t3); }
+  .chip.on { border-color:var(--ac); background:var(--as); color:var(--ac); }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+  .toolbar input[type=search] { flex:1 1 220px; }
+  input[type=text], input[type=search], input[type=password], input[type=email], select, textarea { border:1.5px solid var(--bd2); border-radius:12px; padding:8px 11px; background:var(--card); font-size:13px; }
+  textarea { width:100%; min-height:90px; resize:vertical; }
+  label.f { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--t3); margin:12px 0 5px; }
+  .list { display:flex; flex-direction:column; gap:6px; }
+  .row { display:grid; grid-template-columns:86px 1fr 150px 92px 92px; gap:10px; align-items:center; background:var(--card); border:1px solid var(--bd); border-radius:10px; padding:9px 12px; cursor:pointer; }
+  .row:hover { background:var(--s2); }
+  .row .k { font-family:var(--mn); font-size:11.5px; color:var(--t3); }
+  .row .t { font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .row .t small { display:block; font-weight:400; color:var(--t4); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row .m { font-size:12px; color:var(--t3); }
+  .row .d { font-family:var(--mn); font-size:11px; color:var(--t4); text-align:right; }
+  @media (max-width:820px) { .row { grid-template-columns:72px 1fr 120px; } .row .m, .row .d { display:none; } }
+  .pill { display:inline-block; font-size:10.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; padding:2px 8px; border-radius:20px; border:1px solid; white-space:nowrap; }
+  .st-new, .st-open { color:var(--ac); background:var(--as); border-color:rgba(49,122,40,.3); }
+  .st-waiting_on_customer { color:var(--am); background:var(--ams); border-color:rgba(181,71,8,.3); }
+  .st-escalated { color:var(--vi); background:var(--vs); border-color:rgba(91,74,184,.3); }
+  .st-resolved { color:var(--gn); background:var(--gs); border-color:rgba(6,118,71,.3); }
+  .st-closed { color:var(--t4); background:transparent; border-color:var(--bd); }
+  .tag { display:inline-block; font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; padding:1px 7px; border-radius:20px; background:var(--ams); color:var(--am); }
+  .tag.vi { background:var(--vs); color:var(--vi); }
+  .empty { text-align:center; color:var(--t4); padding:40px; }
+  .scrim { position:fixed; inset:0; background:var(--scrim); z-index:20; }
+  .drawer { position:fixed; top:0; right:0; bottom:0; width:min(700px,100vw); background:var(--bg); border-left:1px solid var(--bd); box-shadow:var(--sh3); z-index:21; overflow-y:auto; padding:22px 16px 60px; overflow-wrap:anywhere; }
+  .drawer h2 { font-family:var(--sf); font-weight:500; font-size:22px; margin:6px 0 4px; line-height:1.2; }
+  .meta { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12px; color:var(--t3); margin:8px 0 14px; align-items:center; }
+  .card { background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:14px 16px; margin:12px 0; min-width:0; }
+  .card h3 { margin:0 0 8px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--t3); }
+  .desc { white-space:pre-wrap; color:var(--t2); font-size:13.5px; }
+  .desc code { font-family:var(--mn); font-size:12px; background:var(--s2); padding:0 4px; border-radius:4px; }
+  .msg { border:1px solid var(--bd); border-radius:12px; padding:10px 12px; margin:8px 0; background:var(--card); }
+  .msg.internal { background:var(--ams); border-color:rgba(181,71,8,.25); }
+  .msg.draft { background:var(--vs); border-color:rgba(91,74,184,.3); border-style:dashed; }
+  .msg .by { font-size:12px; color:var(--t3); margin-bottom:4px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .shots { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .shots a { display:block; border:1px solid var(--bd); border-radius:8px; overflow:hidden; background:var(--s2); }
+  .shots img { display:block; width:150px; height:100px; object-fit:cover; }
+  .timeline { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+  .timeline li { display:grid; grid-template-columns:118px 1fr; gap:10px; font-size:12.5px; }
+  .timeline .at { font-family:var(--mn); font-size:11px; color:var(--t4); }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; }
+  .hint { font-size:12px; color:var(--t4); }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--nav); color:#fff; padding:10px 16px; border-radius:10px; font-size:13px; z-index:40; box-shadow:var(--sh3); }
+  .modal { position:fixed; inset:0; display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; z-index:30; background:var(--scrim); }
+  .modal .box { background:var(--bg); border:1px solid var(--bd); border-radius:16px; width:min(620px,100%); padding:22px 24px; box-shadow:var(--sh3); }
+  .modal h2 { font-family:var(--sf); font-weight:500; font-size:22px; margin:0 0 4px; }
+  .close { position:absolute; right:14px; top:12px; }
+  .kv { display:grid; grid-template-columns:110px 1fr; gap:6px 12px; font-size:12.5px; }
+  .kv .l { color:var(--t4); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; padding-top:2px; }
+  .flow { font-size:12px; color:var(--t3); border-top:1px solid var(--bd); margin-top:26px; padding-top:12px; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow" id="brand">Support</div>
+      <h1 id="h1">Support</h1>
+      <div class="sub" id="sub">Loading…</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn sm" id="whoBtn">…</button>
+      <button class="btn primary" id="newBtn" hidden>New ticket</button>
+    </div>
+  </header>
+  <div class="chips" id="chips" hidden></div>
+  <div class="toolbar" id="toolbar" hidden>
+    <input type="search" id="q" placeholder="Search title, description, key…" aria-label="Search">
+    <select id="fOrg" aria-label="Organisation"><option value="">All organisations</option></select>
+    <select id="fCat" aria-label="Category"><option value="">All categories</option></select>
+    <label class="chip"><input type="checkbox" id="fDraft" style="margin:0"> Needs a draft</label>
+  </div>
+  <div class="list" id="list"><div class="empty">Loading…</div></div>
+  <div class="flow" id="flow"></div>
+</div>
+<div id="drawerHost"></div>
+<div id="modalHost"></div>
+
+<script>
+(function () {
+  const SL = {new:'New', open:'Open', waiting_on_customer:'Waiting on customer', escalated:'Escalated', resolved:'Resolved', closed:'Closed'};
+  const CSL = {new:'Received', open:'With support', waiting_on_customer:'Needs your answer', escalated:'With the product team', resolved:'Answered — please confirm', closed:'Closed'};
+  const MOVES = {new:['open','waiting_on_customer','escalated','resolved'], open:['waiting_on_customer','escalated','resolved'], waiting_on_customer:['open','escalated','resolved'], escalated:['open','resolved'], resolved:['open']};
+  const state = { meta:null, rows:[], stats:null, status:'active', q:'', org:'', cat:'', draft:false, me:'', email:'', token:'', org_:'', role:'customer' };
+  const $ = (s, r) => (r || document).querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const rich = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  const day = iso => iso ? String(iso).slice(0, 10) : '';
+  const staff = () => state.role !== 'customer';
+  const label = s => (staff() ? SL : CSL)[s] || s;
+  let toastT;
+  function toast(m) { let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); } t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
+  try { Object.assign(state, JSON.parse(localStorage.getItem('support.who') || '{}')); } catch (e) {}
+
+  async function api(path, opts = {}) {
+    const headers = { 'X-Actor': state.me, 'X-Role': state.role };
+    if (state.token) headers['X-Support-Token'] = state.token;
+    if (!staff()) { headers['X-Email'] = state.email; if (state.org_) headers['X-Org'] = state.org_; }
+    if (opts.json !== undefined) { headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(opts.json); }
+    const r = await fetch(path, Object.assign({}, opts, { headers }));
+    let data = null; try { data = await r.json(); } catch (e) {}
+    if (!r.ok) { const err = new Error((data && data.error) || r.statusText); err.status = r.status; throw err; }
+    return data;
+  }
+  async function uploadAll(files) {
+    const ids = [];
+    for (const f of files) { const fd = new FormData(); fd.append('file', f, f.name || 'screenshot.png'); ids.push((await api('api/uploads', { method: 'POST', body: fd })).id); }
+    return ids;
+  }
+  const shotsHtml = ids => (ids || []).length ? `<div class="shots">${ids.map(id => `<a href="uploads/${esc(id)}" target="_blank" rel="noopener"><img src="uploads/${esc(id)}" alt="screenshot" loading="lazy"></a>`).join('')}</div>` : '';
+
+  // ---------- identity ----------
+  function askIdentity(msg) {
+    const open = state.meta && !state.meta.tokenRequired;
+    $('#modalHost').innerHTML = `<div class="modal"><div class="box" role="dialog" aria-label="Who are you">
+      <h2>Who are you?</h2><div class="hint">${esc(msg || 'Customers see their own tickets. The support team sees every ticket.')}</div>
+      <label class="f" for="iRole">I am</label><select id="iRole" style="width:100%"><option value="customer">A customer</option><option value="support">On the support team</option><option value="admin">An admin (any status)</option></select>
+      <label class="f" for="iName">Name</label><input type="text" id="iName" style="width:100%" value="${esc(state.me)}">
+      <div id="iCust"><label class="f" for="iEmail">Email</label><input type="email" id="iEmail" style="width:100%" value="${esc(state.email)}">
+        ${open ? `<label class="f" for="iOrg">Organisation (local dev)</label><input type="text" id="iOrg" style="width:100%" value="${esc(state.org_)}">` : ''}</div>
+      <div ${open ? 'hidden' : ''}><label class="f" for="iToken">Access token</label><input type="password" id="iToken" style="width:100%" value="${esc(state.token)}"><div class="hint">Customers: your organisation's token. Support: the team token.</div></div>
+      <div class="actions" style="margin-top:16px"><button class="btn primary" id="iOk">Continue</button></div></div></div>`;
+    $('#iRole').value = state.role;
+    const sync = () => { $('#iCust').hidden = $('#iRole').value !== 'customer'; };
+    $('#iRole').onchange = sync; sync();
+    $('#iOk').onclick = () => {
+      state.role = $('#iRole').value; state.me = $('#iName').value.trim(); state.email = ($('#iEmail').value || '').trim();
+      state.token = ($('#iToken').value || '').trim(); state.org_ = $('#iOrg') ? $('#iOrg').value.trim() : '';
+      if (!state.me || (!staff() && !state.email)) { toast('Name' + (staff() ? '' : ' and email') + ', please.'); return; }
+      try { localStorage.setItem('support.who', JSON.stringify({ me: state.me, email: state.email, token: state.token, org_: state.org_, role: state.role })); } catch (e) {}
+      $('#modalHost').innerHTML = ''; boot();
+    };
+  }
+  $('#whoBtn').onclick = () => askIdentity();
+
+  // ---------- list ----------
+  async function refresh() {
+    try {
+      state.rows = await api('api/tickets');
+      if (staff()) state.stats = await api('api/stats');
+      $('#sub').textContent = `You are ${state.me}${staff() ? ' · ' + state.role : ''} · ${state.rows.length} ticket${state.rows.length === 1 ? '' : 's'}.`;
+      render();
+    } catch (e) { if ([400, 401].includes(e.status)) askIdentity(e.message); else $('#sub').textContent = 'Could not load: ' + e.message; }
+  }
+  function visible() {
+    const q = state.q.trim().toLowerCase();
+    return state.rows.filter(t => {
+      if (state.status === 'active' ? t.status === 'closed' : state.status !== 'all' && t.status !== state.status) return false;
+      if (state.org && t.org !== state.org) return false;
+      if (state.cat && t.category !== state.cat) return false;
+      if (state.draft && !t.needsDraft) return false;
+      return !q || (t.key + ' ' + t.title).toLowerCase().includes(q);
+    });
+  }
+  function render() {
+    if (staff()) {
+      const by = (state.stats || {}).byStatus || {}, total = (state.stats || {}).total || 0;
+      $('#chips').innerHTML = [['active', 'Active', total - (by.closed || 0)], ['all', 'All', total]].concat(state.meta.statuses.map(s => [s, SL[s], by[s] || 0]))
+        .map(([k, l, n]) => `<button class="chip ${state.status === k ? 'on' : ''}" data-s="${k}">${l} <span class="n">${n}</span></button>`).join('');
+    }
+    const rows = visible();
+    $('#list').innerHTML = rows.length ? rows.map(t => `<div class="row" data-k="${esc(t.key)}" role="button" tabindex="0">
+      <span class="k">${esc(t.key)}</span>
+      <span class="t">${esc(t.title)}${staff() ? `<small>${esc(t.requester.name)} · ${esc(t.org)}${t.category ? ' · ' + esc(t.category) : ''}${t.draftPending ? ' · <span class="tag vi">Draft ready</span>' : ''}${t.issueRef ? ' · ' + esc(t.issueRef) : ''}${t.reopenedFrom ? ' · reopens ' + esc(t.reopenedFrom) : ''}</small>` : ''}</span>
+      <span><span class="pill st-${esc(t.status)}">${esc(label(t.status))}</span></span>
+      <span class="m">${staff() ? esc(t.priority || '') : ''}</span>
+      <span class="d">${day(t.updatedAt)}</span></div>`).join('') : `<div class="empty">${state.rows.length ? 'Nothing matches.' : staff() ? 'No tickets yet.' : 'You have no tickets. Ask us anything with New ticket.'}</div>`;
+  }
+  $('#chips').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (b) { state.status = b.dataset.s; render(); } });
+  $('#q').oninput = e => { state.q = e.target.value; render(); };
+  $('#fOrg').onchange = e => { state.org = e.target.value; render(); };
+  $('#fCat').onchange = e => { state.cat = e.target.value; render(); };
+  $('#fDraft').onchange = e => { state.draft = e.target.checked; render(); };
+  $('#list').addEventListener('click', e => { const r = e.target.closest('[data-k]'); if (r) openDrawer(r.dataset.k); });
+  $('#list').addEventListener('keydown', e => { const r = e.target.closest('[data-k]'); if (r && e.key === 'Enter') openDrawer(r.dataset.k); });
+
+  // ---------- drawer ----------
+  function msgHtml(m) {
+    if (!staff()) return `<div class="msg"><div class="by"><b>${esc(m.by)}</b><span class="mono">${day(m.at)}</span></div><div class="desc">${rich(m.text)}</div>${shotsHtml(m.screenshots)}</div>`;
+    const v = m.visibility, rec = m.tag === 'recommend_escalation';
+    return `<div class="msg ${v === 'public' ? '' : v}"><div class="by"><b>${esc(m.by)}</b><span class="mono">${day(m.at)}</span>
+      ${v === 'draft' ? '<span class="tag vi">Draft — not sent</span>' : v === 'internal' ? '<span class="tag">Internal</span>' : m.role === 'customer' ? '' : '<span class="tag vi" style="opacity:.7">Sent</span>'}
+      ${rec ? '<span class="tag">Escalation recommended</span>' : ''}${m.draftedBy ? `<span class="hint">drafted by ${esc(m.draftedBy)}</span>` : ''}</div>
+      ${v === 'draft' ? `<textarea data-draft="${esc(m.id)}">${esc(m.text)}</textarea><div class="actions"><button class="btn sm" data-save="${esc(m.id)}">Save edit</button><button class="btn sm primary" data-send="${esc(m.id)}">Send to customer</button></div>` : `<div class="desc">${rich(m.text)}</div>`}
+      ${shotsHtml(m.screenshots)}</div>`;
+  }
+  async function openDrawer(key) {
+    let t; try { t = await api('api/tickets/' + encodeURIComponent(key)); } catch (e) { toast(e.message); return; }
+    const host = $('#drawerHost'), cx = t.context || {}, esc_ = t.escalation;
+    const custBtns = t.status === 'resolved' ? `<button class="btn sm primary" data-to="closed">Yes, it is solved</button><button class="btn sm danger" data-to="open" data-note="1">Still a problem</button>`
+      : t.status === 'closed' ? `<button class="btn sm" data-to="open" data-note="1">Reopen (starts a new ticket)</button>` : '';
+    const supBtns = state.role === 'admin' ? `<select id="adminSt" class="btn sm" aria-label="Set status"><option value="">Set status…</option>${state.meta.statuses.map(s => `<option value="${s}">${SL[s]}</option>`).join('')}</select>`
+      : (MOVES[t.status] || []).map(s => `<button class="btn sm ${s === 'resolved' ? 'primary' : ''}" data-to="${s}">${SL[s]}</button>`).join('');
+    host.innerHTML = `<div class="scrim" id="scrim"></div><div class="drawer" role="dialog" aria-label="Ticket ${esc(t.key)}">
+      <button class="btn sm close" id="dclose">Close ✕</button>
+      <div class="eyebrow mono">${esc(t.key)}${t.reopenedFrom ? ' · reopens ' + esc(t.reopenedFrom) : ''}${t.reopenedAs ? ' · continued in ' + esc(t.reopenedAs) : ''}</div>
+      <h2>${esc(t.title)}</h2>
+      <div class="meta"><span class="pill st-${esc(t.status)}">${esc(label(t.status))}</span><span>${esc(t.requester.name)} &lt;${esc(t.requester.email)}&gt;</span>${staff() ? `<span>${esc(t.org)}</span>` : ''}<span class="mono">${day(t.createdAt)}</span></div>
+      ${staff() ? `<div class="card"><div class="kv">
+        <div class="l">Category</div><div><select id="cat" class="btn sm"><option value="">—</option>${state.meta.categories.map(c => `<option ${t.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
+        <div class="l">Priority</div><div><select id="pri" class="btn sm">${state.meta.priorities.map(c => `<option ${t.priority === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
+        ${cx.pageUrl ? `<div class="l">Page</div><div class="mono">${esc(cx.pageUrl)}</div>` : ''}${cx.appVersion ? `<div class="l">App version</div><div class="mono">${esc(cx.appVersion)}</div>` : ''}${cx.userAgent ? `<div class="l">Browser</div><div class="mono">${esc(cx.userAgent)}</div>` : ''}
+        <div class="l">First reply</div><div class="mono">${esc(t.firstResponseAt || '—')}</div>
+        ${esc_ ? `<div class="l">Escalated</div><div><b class="mono">${esc(esc_.issueRef || esc_.reportRef || '')}</b> by ${esc(esc_.by)} ${day(esc_.at)}${esc_.verdict ? ` · verdict ${esc(esc_.verdict)}` : ''}</div>` : ''}
+      </div></div>` : ''}
+      <div class="card"><h3>Description</h3><div class="desc">${rich(t.description || '')}</div>${shotsHtml(t.screenshots)}</div>
+      <div class="card"><h3>Conversation</h3>${t.messages.map(msgHtml).join('') || '<div class="hint">No messages yet.</div>'}</div>
+      <div class="card"><h3>${staff() ? 'Reply or note' : 'Your reply'}</h3>
+        <textarea id="txt" placeholder="${staff() ? 'Reply to the customer, or an internal note for the team…' : 'Answer, add detail, or say what is still wrong…'}"></textarea>
+        <div class="actions"><input type="file" id="files" accept="image/*" multiple aria-label="Screenshots">
+          ${staff() ? `<select id="vis" class="btn sm" aria-label="Visibility"><option value="public">Reply to customer</option><option value="internal">Internal note</option></select>` : ''}
+          ${t.status === 'closed' && !staff() ? '' : '<button class="btn sm soft" id="sendMsg">Send</button>'}</div>
+        <div class="actions">${staff() ? supBtns : custBtns}${staff() && state.role !== 'admin' && (MOVES[t.status] || []).includes('escalated') ? '<input type="text" id="issueRef" placeholder="Internal issue, e.g. IS-512 (optional if the tracker is connected)" class="mono" style="width:200px">' : ''}</div></div>
+      <div class="card"><h3>History</h3><ul class="timeline">${t.history.slice().reverse().map(h => `<li><span class="at">${day(h.at)}<br>${esc(h.by)}</span><span>${h.from ? `<span class="pill st-${esc(h.from)}">${esc(label(h.from))}</span> → ` : ''}<span class="pill st-${esc(h.to)}">${esc(label(h.to))}</span>${h.note ? `<div class="desc" style="margin-top:4px">${rich(h.note)}</div>` : ''}</span></li>`).join('')}</ul></div>
+    </div>`;
+    const close = () => { host.innerHTML = ''; };
+    $('#scrim').onclick = close; $('#dclose').onclick = close;
+    document.onkeydown = e => { if (e.key === 'Escape') close(); };
+    const again = msg => { toast(msg); refresh(); openDrawer(t.key); };
+    const run = async (fn, msg) => { try { await fn(); again(msg); } catch (e) { toast(e.message); } };
+    const send = $('#sendMsg');
+    if (send) send.onclick = () => run(async () => {
+      const text = $('#txt').value.trim(), screenshots = await uploadAll($('#files').files);
+      if (!text && !screenshots.length) throw new Error('Write something first.');
+      await api(`api/tickets/${t.key}/messages`, { method: 'POST', json: { text, screenshots, visibility: $('#vis') ? $('#vis').value : 'public' } });
+    }, 'Sent.');
+    host.querySelectorAll('[data-to]').forEach(b => b.onclick = () => run(async () => {
+      const note = $('#txt').value.trim();
+      if (b.dataset.note && !note) throw new Error('Say what is still wrong in the reply box first.');
+      const out = await api(`api/tickets/${t.key}/transition`, { method: 'POST', json: { to: b.dataset.to, note, issueRef: $('#issueRef') ? $('#issueRef').value.trim() : '' } });
+      if (out.key !== t.key) { t.key = out.key; }
+    }, `${t.key} → ${label(b.dataset.to)}`));
+    host.querySelectorAll('[data-save]').forEach(b => b.onclick = () => run(() => api(`api/tickets/${t.key}/messages/${b.dataset.save}`, { method: 'POST', json: { text: $(`[data-draft="${b.dataset.save}"]`).value } }), 'Draft saved.'));
+    host.querySelectorAll('[data-send]').forEach(b => b.onclick = () => run(() => api(`api/tickets/${t.key}/messages/${b.dataset.send}/send`, { method: 'POST', json: { text: $(`[data-draft="${b.dataset.send}"]`).value } }), 'Sent to the customer.'));
+    const field = (id, k) => { const el = $('#' + id); if (el) el.onchange = () => run(() => api(`api/tickets/${t.key}/fields`, { method: 'POST', json: { [k]: el.value } }), 'Saved.'); };
+    field('cat', 'category'); field('pri', 'priority');
+    const adm = $('#adminSt');
+    if (adm) adm.onchange = () => adm.value && run(() => api(`api/tickets/${t.key}/transition`, { method: 'POST', json: { to: adm.value, note: $('#txt').value.trim(), issueRef: adm.value === 'escalated' ? (prompt('Internal issue key') || '') : '' } }), 'Status set.');
+  }
+
+  // ---------- new ticket (customer) ----------
+  $('#newBtn').onclick = () => {
+    $('#modalHost').innerHTML = `<div class="modal" id="modal"><div class="box" role="dialog" aria-label="New ticket">
+      <h2>How can we help?</h2>
+      <label class="f" for="nTitle">Title</label><input type="text" id="nTitle" style="width:100%" maxlength="200">
+      <label class="f" for="nDesc">Description</label><textarea id="nDesc" placeholder="What happened, and what did you expect?"></textarea>
+      <label class="f" for="nFiles">Screenshots</label><input type="file" id="nFiles" accept="image/*" multiple>
+      <div class="actions" style="margin-top:16px"><button class="btn primary" id="nOk">Send</button><button class="btn" id="nNo">Cancel</button><span class="hint" id="nMsg"></span></div></div></div>`;
+    $('#nNo').onclick = () => { $('#modalHost').innerHTML = ''; };
+    $('#nOk').onclick = async () => {
+      const title = $('#nTitle').value.trim();
+      if (title.length < 3) { $('#nMsg').textContent = 'A short title, please.'; return; }
+      $('#nOk').disabled = true; $('#nMsg').textContent = 'Sending…';
+      try {
+        const doc = await api('api/tickets', { method: 'POST', json: { title, description: $('#nDesc').value.trim(), screenshots: await uploadAll($('#nFiles').files) } });
+        $('#modalHost').innerHTML = ''; toast(doc.key + ' is with the support team.'); refresh();
+      } catch (e) { $('#nOk').disabled = false; $('#nMsg').textContent = e.message; }
+    };
+  };
+
+  // ---------- boot ----------
+  async function boot() {
+    try { state.meta = await api('api/meta'); }
+    catch (e) { if ([400, 401].includes(e.status)) { state.meta = state.meta || { tokenRequired: e.status === 401 }; askIdentity(e.message); } else $('#sub').textContent = 'Server unreachable: ' + e.message; return; }
+    if (!state.me) { askIdentity(); return; }
+    $('#brand').textContent = state.meta.brand; document.title = state.meta.brand;
+    $('#h1').innerHTML = staff() ? 'Support <em>desk</em>' : 'Your <em>tickets</em>';
+    $('#whoBtn').textContent = state.me;
+    $('#newBtn').hidden = staff(); $('#chips').hidden = !staff(); $('#toolbar').hidden = !staff();
+    if (staff()) {
+      $('#fOrg').innerHTML = '<option value="">All organisations</option>' + state.meta.orgs.map(o => `<option>${esc(o)}</option>`).join('');
+      $('#fCat').innerHTML = '<option value="">All categories</option>' + state.meta.categories.map(o => `<option>${esc(o)}</option>`).join('');
+      $('#flow').innerHTML = `<b>Flow.</b> New → Open → Waiting on customer (their reply reopens it) or Escalated (to an internal issue) → Resolved → the customer confirms, or it closes itself after ${state.meta.autoCloseDays} days. The Support Agent writes <b>drafts</b> and internal notes only; nothing reaches a customer until you send it.`;
+    } else {
+      state.status = 'all';
+      $('#flow').innerHTML = 'We answer here. When we mark a ticket answered, confirm it is solved or tell us what is still wrong. A reopened closed ticket starts a new one.';
+    }
+    await refresh();
+    setInterval(() => { if (!document.hidden) refresh(); }, 20000);
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

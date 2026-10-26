@@ -2,7 +2,7 @@
 name: issues-dashboard
 description: "Refresh the Issue Ledger page: classify every issues-log entry not yet in the classified JSON (fixed taxonomy: kind, issue bucket, fix kind, layer, module, regression test), re-render the dashboard HTML with tools/issues_dashboard.py, and republish it to the artifact URL stored in the JSON so the link never changes. Triggers on: /issues-dashboard, refresh the issues page, update the issue ledger, reclassify the issues log, issues stats, bug trends."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "2.0"
   category: "reporting"
 ---

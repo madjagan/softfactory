@@ -41,11 +41,12 @@ PREFIX = os.environ.get("ISSUES_PREFIX", "IS")
 ALLOWED_ROLES = {r.strip() for r in os.environ.get("ISSUES_ROLES", "tester,agent,admin").split(",") if r.strip()}
 # A CUSTOMER board shows status only: the analysis never leaves the server, however it got there.
 CUSTOMER = os.environ.get("ISSUES_CUSTOMER", "") == "1"
-# The internal board MIRRORS a customer board: every issue filed there is copied here (source
-# "customer", sourceRef = its key, screenshots and comments included), the analysis is written
-# here, and only the resulting STATUS travels back. Set to the customer board's base URL.
-FEEDBACK_SYNC_URL = os.environ.get("FEEDBACK_SYNC_URL", "").rstrip("/")
-FEEDBACK_SYNC_TOKEN = os.environ.get("FEEDBACK_SYNC_TOKEN", "")
+# The internal board triages ONE BOARD PER CUSTOMER: FEEDBACK_BOARDS="acme=http://acme-feedback:3002,…",
+# each board's token in FEEDBACK_TOKEN_<NAME>. Every customer report lands here in an intake queue
+# (table `reports`); the Issue Agent attaches it to an internal issue or promotes it to a new one,
+# and only the resulting STATUS travels back to that customer's own board.
+FEEDBACK_BOARDS = {n.strip(): u.strip().rstrip("/") for n, _, u in (p.partition("=") for p in os.environ.get("FEEDBACK_BOARDS", "").split(","))
+                   if n.strip() and u.strip()}
 FEEDBACK_SYNC_INTERVAL = int(os.environ.get("FEEDBACK_SYNC_INTERVAL", "30"))
 PUSH_ACTOR = os.environ.get("ISSUES_PUSH_ACTOR", "Product team")   # how a status pushed to the customer board signs itself
 
@@ -91,7 +92,22 @@ def init_db() -> None:
         CREATE INDEX IF NOT EXISTS issues_status ON issues(status);
         CREATE TABLE IF NOT EXISTS uploads (
             id TEXT PRIMARY KEY, filename TEXT, content_type TEXT, size INTEGER, created_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS reports (
+            board TEXT NOT NULL, key TEXT NOT NULL, issue TEXT, flag TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL,
+            doc TEXT NOT NULL, PRIMARY KEY (board, key));
         """)
+        # A single customer board used to be MIRRORED (one issue per customer issue, source "customer",
+        # sourceRef = its key). Each mirror becomes an issue with one attached report, on the board listed first.
+        board = next(iter(FEEDBACK_BOARDS), "customer")
+        for row in con.execute("SELECT doc FROM issues WHERE source='customer'").fetchall():
+            doc = json.loads(row["doc"])
+            if doc.get("reports") or not doc.get("sourceRef"):
+                continue
+            put_report(con, {"board": board, "key": doc["sourceRef"], **{k: doc.get(k, "") for k in REPORT_FIELDS},
+                             "screenshots": list(doc.get("screenshots") or []), "comments": [], "customerStatus": "",
+                             "issue": doc["key"], "flag": "", "sync": doc.get("sync") or {"commentsSeen": 0, "historySeen": 0, "pushedAt": ""}})
+            doc["reports"] = [f"{board}/{doc['sourceRef']}"]
+            put_issue(con, doc)
         # The verdict-giving role was called "claude" before it became the Issue Agent: carry old boards over.
         for row in con.execute("""SELECT doc FROM issues WHERE doc LIKE '%"claude"%'""").fetchall():
             doc = json.loads(row["doc"])
@@ -129,6 +145,30 @@ def get_issue(con: sqlite3.Connection, key: str) -> dict:
     if not row:
         raise HTTPException(404, f"{key} not found")
     return json.loads(row["doc"])
+
+
+REPORT_FIELDS = ["title", "description", "module", "kind", "severity", "persona", "reporter", "build", "createdAt"]
+
+
+def ref(r: dict) -> str:
+    return f"{r['board']}/{r['key']}"
+
+
+def put_report(con: sqlite3.Connection, r: dict) -> None:
+    con.execute("INSERT OR REPLACE INTO reports(board,key,issue,flag,updated_at,doc) VALUES (?,?,?,?,?,?)",
+                (r["board"], r["key"], r.get("issue"), r.get("flag") or "", now_iso(), json.dumps(r, ensure_ascii=False)))
+
+
+def find_report(con: sqlite3.Connection, board: str, key: str) -> Optional[dict]:
+    row = con.execute("SELECT doc FROM reports WHERE board=? AND key=?", (board, key)).fetchone()
+    return json.loads(row["doc"]) if row else None
+
+
+def get_report(con: sqlite3.Connection, board: str, key: str) -> dict:
+    r = find_report(con, board, key)
+    if not r:
+        raise HTTPException(404, f"{board}/{key} not found")
+    return r
 
 
 def next_num(con: sqlite3.Connection) -> int:
@@ -215,7 +255,7 @@ def public(doc: dict) -> dict:
 
 def summary(doc: dict) -> dict:
     keep = ["key", "num", "title", "status", "module", "kind", "severity", "source", "sourceRef", "reporter",
-            "createdAt", "updatedAt", "build", "persona", "splitInto"]
+            "createdAt", "updatedAt", "build", "persona", "splitInto", "reports"]
     s = {k: doc.get(k) for k in keep}
     s["screenshotCount"] = len(doc.get("screenshots") or [])
     s["processed"] = bool((doc.get("agent") or {}).get("processedAt")) and not CUSTOMER
@@ -226,7 +266,7 @@ def summary(doc: dict) -> dict:
 def meta(a: Actor = Depends(actor)):
     return {"statuses": STATUSES, "kinds": KINDS, "severities": SEVERITIES, "modules": MODULES, "actor": a.model_dump(),
             "tokenRequired": bool(TOKEN), "brand": BRAND, "prefix": PREFIX, "customer": CUSTOMER, "pushActor": PUSH_ACTOR,
-            "mirrors": bool(FEEDBACK_SYNC_URL),
+            "mirrors": bool(FEEDBACK_BOARDS), "boards": list(FEEDBACK_BOARDS),
             "roles": [r for r in ("tester", "admin") if r in ALLOWED_ROLES]}
 
 
@@ -235,7 +275,11 @@ def stats(a: Actor = Depends(actor)):
     con = connect()
     try:
         rows = con.execute("SELECT status, COUNT(*) AS n FROM issues GROUP BY status").fetchall()
-        return {"byStatus": {r["status"]: r["n"] for r in rows}, "total": sum(r["n"] for r in rows)}
+        out = {"byStatus": {r["status"]: r["n"] for r in rows}, "total": sum(r["n"] for r in rows)}
+        if not CUSTOMER:
+            out["intake"] = con.execute("SELECT COUNT(*) FROM reports WHERE issue IS NULL").fetchone()[0]
+            out["flagged"] = con.execute("SELECT COUNT(*) FROM reports WHERE issue IS NOT NULL AND flag != ''").fetchone()[0]
+        return out
     finally:
         con.close()
 
@@ -259,7 +303,7 @@ def list_issues(status: Optional[str] = None, module: Optional[str] = None, sour
         con.close()
     if q:
         ql = q.lower()
-        docs = [d for d in docs if ql in " ".join(str(d.get(k, "")) for k in ("key", "title", "description", "sourceRef")).lower()]
+        docs = [d for d in docs if ql in " ".join(str(d.get(k, "")) for k in ("key", "title", "description", "sourceRef", "reports")).lower()]
     if reporter:
         docs = [d for d in docs if (d.get("reporter") or "").lower() == reporter.lower()]
     return [public(d) for d in docs] if full else [summary(d) for d in docs]
@@ -269,9 +313,17 @@ def list_issues(status: Optional[str] = None, module: Optional[str] = None, sour
 def read_issue(key: str, a: Actor = Depends(actor)):
     con = connect()
     try:
-        return public(get_issue(con, key))
+        return with_reports(con, get_issue(con, key))
     finally:
         con.close()
+
+
+def with_reports(con: sqlite3.Connection, doc: dict) -> dict:
+    """The issue as a caller sees it, with every linked customer report in full."""
+    out = public(doc)
+    if doc.get("reports"):
+        out = {**out, "customerReports": [r for r in (find_report(con, *x.split("/", 1)) for x in doc["reports"]) if r]}
+    return out
 
 
 @app.post("/api/issues", status_code=201)
@@ -453,7 +505,7 @@ def _known_uploads(con: sqlite3.Connection, ids: list[str]) -> list[str]:
     return out
 
 
-# ---------------- mirroring a customer board ----------------
+# ---------------- syncing the customer boards ----------------
 class Remote:
     """The customer board over HTTP, as the Issue Agent (role agent, signed PUSH_ACTOR)."""
 
@@ -483,8 +535,12 @@ class Remote:
             return r.read()
 
 
-CUSTOMER_MOVES = {"open", "verified", "closed"}   # what the customer may do to their copy
-VERDICTS = {"fixed", "duplicate", "as_speced"}    # released to the customer once verified here
+VERDICTS = {"fixed", "as_speced"}                                   # what a customer is told, once verified here
+REOPENABLE = {"fixed", "duplicate", "as_speced", "verified", "closed"}  # a customer move to open from these is a reopen
+CUSTOMER_NOTES = {
+    "fixed": "Fixed — it reaches you with the next build. Please verify and mark Verified, or reopen with what you see.",
+    "as_speced": "This is the specified behaviour. If you disagree, reopen and tell us what you expected.",
+}
 
 
 def _copy_shots(con: sqlite3.Connection, remote: Remote, ids: list[str]) -> list[str]:
@@ -504,114 +560,117 @@ def _copy_shots(con: sqlite3.Connection, remote: Remote, ids: list[str]) -> list
     return out
 
 
-def _release_status(m: dict) -> Optional[str]:
-    """The status the customer's copy should carry now: more_info as soon as the agent asks; the agent's
-    verdict (fixed / duplicate / as_speced) only once the mirror is verified or closed here; else none."""
-    if m["status"] == "more_info":
-        return "more_info"
-    if m["status"] in ("verified", "closed"):
-        for h in reversed(m.get("history") or []):
-            if h.get("to") in VERDICTS:
-                return h["to"]
-    return None
+def _verdict(con: sqlite3.Connection, doc: dict, seen: tuple = ()) -> Optional[tuple[str, str]]:
+    """The verdict a customer may be told for this issue, with the time it was given: fixed or as_speced
+    once the issue is verified or closed here. A customer never sees "duplicate": a verified duplicate
+    passes on the verdict of the issue it duplicates, once that one is verified or closed too."""
+    if doc["status"] not in ("verified", "closed"):
+        return None
+    h = next((h for h in reversed(doc.get("history") or []) if h.get("to") in VERDICTS | {"duplicate"}), None)
+    if h is None:
+        return None
+    if h["to"] != "duplicate":
+        return h["to"], h["at"]
+    twin = (doc.get("agent") or {}).get("duplicateOf", "")
+    seen = (*seen, doc["key"])
+    row = con.execute("SELECT doc FROM issues WHERE key=?", (twin,)).fetchone()
+    return _verdict(con, json.loads(row["doc"]), seen) if row and twin not in seen else None
 
 
-def _customer_note(mirror: dict, st: str) -> str:
-    """The one line the customer sees with a status: the question when we need an answer, else a plain word."""
-    c = mirror.get("agent") or {}
-    if st == "more_info":
-        return (c.get("infoNeeded") or "We need more information to reproduce this — please add what you can and reopen.").strip()
-    if st == "fixed":
-        return "Fixed — it reaches you with the next build. Please verify and mark Verified, or reopen with what you see."
-    if st == "duplicate":
-        return "This is the same defect as one already being worked; it is tracked there."
-    if st == "as_speced":
-        return "This is the specified behaviour. If you disagree, reopen and tell us what you expected."
-    return ""
+def outbound(con: sqlite3.Connection, r: dict) -> Optional[tuple[str, str, str]]:
+    """What this report's copy should carry now, as (status, when it was decided, the note): the later
+    of the agent's question to this one report and its linked issue's released verdict; else none."""
+    out = []
+    if r.get("ask"):
+        out.append(("more_info", r["ask"]["at"], r["ask"]["text"]))
+    v = _verdict(con, get_issue(con, r["issue"])) if r.get("issue") else None
+    if v:
+        out.append((v[0], v[1], CUSTOMER_NOTES[v[0]]))
+    return max(out, key=lambda o: o[1], default=None)
 
 
-def sync_feedback(remote: Remote) -> dict:
-    """One pass: customer issues → mirrors here (new ones, new comments, the customer's own moves); a
-    question here → more_info there at once; a verdict here → its STATUS there once verified internally.
-    Idempotent; safe to run every few seconds."""
-    report = {"created": [], "comments": 0, "customerMoves": 0, "pushed": [], "skipped": []}
-    # Oldest first, so mirrors are numbered in the order the customer filed them.
+def sync_feedback(board: str, remote: Remote) -> dict:
+    """One pass over one customer board. A report not seen before lands in intake (sync creates no
+    issues); new comments and screenshots go onto the report; the customer's own moves are recorded on
+    the report only — an answer or a reopen flags it for the agent, nothing moves an internal issue.
+    Back goes STATUS only: the agent's question to this report at once, the linked issue's verdict once
+    it is verified here. Idempotent; safe to run every few seconds."""
+    report = {"intake": [], "comments": 0, "customerMoves": 0, "pushed": [], "skipped": []}
     theirs = sorted(remote.get_json("/api/issues?full=true&limit=5000"), key=lambda d: d.get("num", 0))
     with tx() as con:
-        mine = {d["sourceRef"]: d for d in (json.loads(r["doc"]) for r in con.execute("SELECT doc FROM issues WHERE source='customer'"))}
         for f in theirs:
-            m = mine.get(f["key"])
-            changed = m is None
-            if m is None:
-                at = now_iso()
-                num = next_num(con)
-                m = {"key": f"{PREFIX}-{num}", "num": num, "title": f.get("title", ""), "description": f.get("description", ""),
-                     "module": f.get("module", "other"), "kind": f.get("kind", "bug"), "severity": f.get("severity", "medium"),
-                     "persona": f.get("persona", ""), "build": f.get("build", ""), "status": f.get("status", "new"), "source": "customer",
-                     "sourceRef": f["key"], "reporter": f.get("reporter", ""), "createdAt": f.get("createdAt", at), "updatedAt": at,
-                     "screenshots": _copy_shots(con, remote, f.get("screenshots") or []), "agent": {},
-                     "comments": [], "history": [{"at": at, "by": "sync", "from": "", "to": f.get("status", "new"),
-                                                  "note": f"Mirrored from the customer board ({f['key']}, filed by {f.get('reporter') or 'unknown'})."}],
+            r = find_report(con, board, f["key"])
+            changed = r is None
+            if r is None:
+                r = {"board": board, "key": f["key"], **{k: f.get(k, "") for k in REPORT_FIELDS},
+                     "screenshots": _copy_shots(con, remote, f.get("screenshots") or []), "comments": [],
+                     "customerStatus": f.get("status", "new"), "issue": None, "flag": "",
                      "sync": {"commentsSeen": 0, "historySeen": len(f.get("history") or []), "pushedAt": ""}}
-                report["created"].append(f"{m['key']}←{f['key']}")
-            sy = m.setdefault("sync", {"commentsSeen": 0, "historySeen": 0, "pushedAt": ""})
-            # the customer's words, with their screenshots
+                report["intake"].append(ref(r))
+            sy = r["sync"]
             for cm in (f.get("comments") or [])[sy.get("commentsSeen", 0):]:
                 if cm.get("by") != PUSH_ACTOR:
-                    m.setdefault("comments", []).append({**cm, "screenshots": _copy_shots(con, remote, cm.get("screenshots") or [])})
+                    r["comments"].append({**cm, "screenshots": _copy_shots(con, remote, cm.get("screenshots") or [])})
                     report["comments"] += 1; changed = True
             sy["commentsSeen"] = len(f.get("comments") or [])
-            # the customer's own moves: answer/reopen, verify, close
             for h in (f.get("history") or [])[sy.get("historySeen", 0):]:
-                if h.get("by") != PUSH_ACTOR and h.get("to") in CUSTOMER_MOVES and m["status"] != h.get("to"):
-                    m.setdefault("history", []).append({"at": h.get("at") or now_iso(), "by": h.get("by") or "customer", "from": m["status"],
-                                                        "to": h["to"], "note": h.get("note", "")})
-                    m["status"] = h["to"]
-                    if h["to"] == "verified":
-                        m["verification"] = {"by": h.get("by"), "at": h.get("at"), "note": h.get("note", "")}
-                    report["customerMoves"] += 1; changed = True
+                if h.get("by") == PUSH_ACTOR:
+                    continue
+                report["customerMoves"] += 1; changed = True
+                if h.get("to") == "open" and h.get("from") == "more_info":
+                    r["flag"] = "answered"
+                elif h.get("to") == "open" and h.get("from") in REOPENABLE:
+                    # A reopen answers the verdict it reopens: that verdict is never sent to this report again.
+                    r["flag"] = "reopened"
+                    sy["pushedAt"] = (outbound(con, r) or ("", sy.get("pushedAt", "")))[1]
+                    if r.get("issue"):
+                        doc = get_issue(con, r["issue"])
+                        doc.setdefault("comments", []).append({"at": now_iso(), "by": "sync", "screenshots": [],
+                                                               "text": f"{f['key']} reopened by {board} ({h.get('by') or 'customer'}): {h.get('note', '')}"})
+                        doc["updatedAt"] = now_iso()
+                        put_issue(con, doc)
             sy["historySeen"] = len(f.get("history") or [])
-            # what travels back, status only: a question at once; a verdict (fixed / duplicate /
-            # as_speced) only after someone here has VERIFIED it — the internal Verified is the release.
-            last = (m.get("history") or [{}])[-1]
-            release = _release_status(m)
-            if release and f.get("status") != release and sy.get("pushedAt") != last.get("at"):
-                if f.get("status") in AGENT_MOVES and release in AGENT_MOVES[f["status"]]:
+            if r.get("customerStatus") != f.get("status"):
+                r["customerStatus"] = f.get("status"); changed = True
+            out = outbound(con, r)
+            if out and f.get("status") != out[0] and sy.get("pushedAt") != out[1]:
+                if f.get("status") in AGENT_MOVES and out[0] in AGENT_MOVES[f["status"]]:
                     try:
-                        remote.post_json(f"/api/issues/{f['key']}/transition", {"to": release, "note": _customer_note(m, release)})
-                        sy["pushedAt"] = last.get("at")   # our own push comes back signed PUSH_ACTOR and is ignored above
-                        report["pushed"].append(f"{f['key']}→{release}"); changed = True
+                        remote.post_json(f"/api/issues/{f['key']}/transition", {"to": out[0], "note": out[2]})
+                        sy["pushedAt"] = out[1]   # our own push comes back signed PUSH_ACTOR and is ignored above
+                        r["customerStatus"], r["flag"] = out[0], ""
+                        report["pushed"].append(f"{f['key']}→{out[0]}"); changed = True
                     except urllib.error.HTTPError as e:
                         report["skipped"].append(f"{f['key']}: {e.code} {e.read().decode(errors='replace')[:120]}")
                 else:
-                    report["skipped"].append(f"{f['key']}: customer copy is {f.get('status')}, cannot move it to {release}")
+                    report["skipped"].append(f"{f['key']}: customer copy is {f.get('status')}, cannot move it to {out[0]}")
             if changed:
-                m["updatedAt"] = now_iso()
-                put_issue(con, m)
+                put_report(con, r)
     return report
 
 
-REMOTE: Optional[Remote] = Remote(FEEDBACK_SYNC_URL, FEEDBACK_SYNC_TOKEN) if FEEDBACK_SYNC_URL else None
+REMOTES = {n: Remote(u, os.environ.get(f"FEEDBACK_TOKEN_{n.upper().replace('-', '_')}", "")) for n, u in FEEDBACK_BOARDS.items()}
 _sync_lock = threading.Lock()
 
 
 def run_sync() -> dict:
-    if REMOTE is None:
-        raise HTTPException(404, "This board mirrors no customer board")
+    if not REMOTES:
+        raise HTTPException(404, "This board triages no customer boards")
+    out = {}
     with _sync_lock:
-        return sync_feedback(REMOTE)
+        for name, remote in REMOTES.items():
+            try:
+                out[name] = sync_feedback(name, remote)
+            except Exception as e:  # one board down never holds up the others
+                out[name] = {"error": f"unreachable: {e}"}
+    return out
 
 
 @app.post("/api/sync")
 def sync_now(a: Actor = Depends(actor)):
     if a.role == "tester":
         raise HTTPException(403, "Only the Issue Agent or an admin runs a sync")
-    try:
-        return run_sync()
-    except HTTPException:
-        raise
-    except Exception as e:  # the customer board is down: say so, keep serving
-        raise HTTPException(502, f"Customer board unreachable: {e}")
+    return run_sync()
 
 
 def _sync_forever() -> None:
@@ -625,8 +684,166 @@ def _sync_forever() -> None:
 
 @app.on_event("startup")
 def _start_sync() -> None:
-    if REMOTE is not None and FEEDBACK_SYNC_INTERVAL > 0:
+    if REMOTES and FEEDBACK_SYNC_INTERVAL > 0:
         threading.Thread(target=_sync_forever, daemon=True, name="feedback-sync").start()
+
+
+# ---------------- triage: customer reports → internal issues ----------------
+class NewReport(BaseModel):
+    board: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,39}$")
+    key: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,59}$")
+    title: str = Field(min_length=3, max_length=200)
+    description: str = ""
+    module: str = "other"
+    kind: str = "bug"
+    severity: str = "medium"
+    persona: str = ""
+    reporter: str = Field(min_length=1, max_length=80)
+    build: str = ""
+    screenshots: list[str] = []
+
+
+class Attach(BaseModel):
+    to: str
+    note: str = ""
+
+
+def _triager(a: Actor) -> None:
+    if CUSTOMER:
+        raise HTTPException(404, "Not on a customer board")
+    if a.role not in ("agent", "admin"):
+        raise HTTPException(403, "Only the Issue Agent or an admin triages a customer report")
+
+
+@app.get("/api/reports")
+def list_reports(intake: bool = False, board: Optional[str] = None, a: Actor = Depends(actor)):
+    """Every customer report, oldest first; `intake` = the agent's queue: unlinked or flagged."""
+    if CUSTOMER:
+        raise HTTPException(404, "Not on a customer board")
+    where, args = [], []
+    if intake:
+        where.append("(issue IS NULL OR flag != '')")
+    if board:
+        where.append("board=?"); args.append(board)
+    con = connect()
+    try:
+        return [json.loads(r["doc"]) for r in con.execute("SELECT doc FROM reports" + (" WHERE " + " AND ".join(where) if where else "") + " ORDER BY rowid", args)]
+    finally:
+        con.close()
+
+
+@app.get("/api/reports/{board}/{key}")
+def read_report(board: str, key: str, a: Actor = Depends(actor)):
+    """The report, plus `release`: the status (and the note) its reporter should be shown now."""
+    if CUSTOMER:
+        raise HTTPException(404, "Not on a customer board")
+    con = connect()
+    try:
+        r = get_report(con, board, key)
+        out = outbound(con, r)
+        return {**r, "release": {"status": out[0], "at": out[1], "note": out[2]} if out else None}
+    finally:
+        con.close()
+
+
+@app.post("/api/reports", status_code=201)
+def file_report(body: NewReport, a: Actor = Depends(actor)):
+    """Another app drops a report straight into intake (the support desk escalates a ticket as board
+    `support`). It is triaged like any customer report and reads its outcome back from `release`."""
+    _triager(a)
+    if body.board in FEEDBACK_BOARDS:
+        raise HTTPException(409, f"{body.board} is a customer board: its reports arrive by sync")
+    for val, allowed, what in ((body.kind, KINDS, "kind"), (body.severity, SEVERITIES, "severity"), (body.module, MODULES, "module")):
+        if val not in allowed:
+            raise HTTPException(400, f"Unknown {what}: {val}")
+    with tx() as con:
+        if find_report(con, body.board, body.key):
+            raise HTTPException(409, f"{body.board}/{body.key} is already in")
+        r = {**body.model_dump(exclude={"screenshots"}), "createdAt": now_iso(), "screenshots": _known_uploads(con, body.screenshots),
+             "comments": [], "customerStatus": "new", "issue": None, "flag": "", "sync": {"commentsSeen": 0, "historySeen": 0, "pushedAt": ""}}
+        put_report(con, r)
+    return r
+
+
+@app.post("/api/reports/{board}/{key}/attach")
+def attach_report(board: str, key: str, body: Attach, a: Actor = Depends(actor)):
+    """Link a report to an existing internal issue (the same defect). Attaching it again to the issue it
+    is already on keeps it there and clears its flag: the agent read the answer or reopen and agrees."""
+    _triager(a)
+    at, who = now_iso(), a.name or a.role
+    with tx() as con:
+        r = get_report(con, board, key)
+        doc = get_issue(con, body.to)
+        if r.get("issue") and r["issue"] != body.to:
+            raise HTTPException(409, f"{ref(r)} is on {r['issue']}; detach it first")
+        if ref(r) not in (doc.get("reports") or []):
+            doc["reports"] = [*(doc.get("reports") or []), ref(r)]
+            doc.setdefault("history", []).append({"at": at, "by": who, "from": doc["status"], "to": doc["status"],
+                                                  "note": f"Attached {ref(r)} ({r.get('reporter') or 'unknown'}): {r.get('title', '')}" + (f" — {body.note.strip()}" if body.note.strip() else "")})
+            doc["updatedAt"] = at
+            put_issue(con, doc)
+        r["issue"], r["flag"] = doc["key"], ""
+        put_report(con, r)
+        return with_reports(con, doc)
+
+
+@app.post("/api/reports/{board}/{key}/promote", status_code=201)
+def promote_report(board: str, key: str, body: Comment, a: Actor = Depends(actor)):
+    """A new defect: the report becomes a new internal issue (its title, description and screenshots), linked to it."""
+    _triager(a)
+    at, who = now_iso(), a.name or a.role
+    with tx() as con:
+        r = get_report(con, board, key)
+        if r.get("issue"):
+            raise HTTPException(409, f"{ref(r)} is on {r['issue']}; detach it first")
+        num = next_num(con)
+        doc = {"key": f"{PREFIX}-{num}", "num": num, "title": r.get("title") or ref(r), "description": r.get("description", ""),
+               "module": r.get("module") if r.get("module") in MODULES else "other", "kind": r.get("kind") if r.get("kind") in KINDS else "bug",
+               "severity": r.get("severity") if r.get("severity") in SEVERITIES else "medium", "persona": r.get("persona", ""),
+               "build": r.get("build", ""), "status": "new", "source": "customer", "sourceRef": "", "reporter": r.get("reporter", ""),
+               "createdAt": at, "updatedAt": at, "screenshots": list(r.get("screenshots") or []), "agent": {}, "comments": [],
+               "reports": [ref(r)], "history": [{"at": at, "by": who, "from": "", "to": "new",
+                                                 "note": f"Promoted from {ref(r)} (filed by {r.get('reporter') or 'unknown'})." + (f" {body.text.strip()}" if body.text.strip() else "")}]}
+        put_issue(con, doc)
+        r["issue"], r["flag"] = doc["key"], ""
+        put_report(con, r)
+        return with_reports(con, doc)
+
+
+@app.post("/api/reports/{board}/{key}/ask")
+def ask_report(board: str, key: str, body: Comment, a: Actor = Depends(actor)):
+    """more_info is per report: the question goes to this one customer's board at the next sync."""
+    _triager(a)
+    if not body.text.strip():
+        raise HTTPException(400, "Write the question")
+    at, who = now_iso(), a.name or a.role
+    with tx() as con:
+        r = get_report(con, board, key)
+        r["ask"] = {"at": at, "by": who, "text": body.text.strip()}
+        r["comments"].append({"at": at, "by": who, "text": body.text.strip(), "screenshots": []})
+        r["flag"] = ""
+        put_report(con, r)
+    return r
+
+
+@app.post("/api/reports/{board}/{key}/detach")
+def detach_report(board: str, key: str, body: Comment, a: Actor = Depends(actor)):
+    """Unlink a report (a reopen that is a different defect); it is back in intake, to promote or attach elsewhere."""
+    _triager(a)
+    at, who = now_iso(), a.name or a.role
+    with tx() as con:
+        r = get_report(con, board, key)
+        if not r.get("issue"):
+            raise HTTPException(409, f"{ref(r)} is not on an issue")
+        doc = get_issue(con, r["issue"])
+        doc["reports"] = [x for x in doc.get("reports") or [] if x != ref(r)]
+        doc.setdefault("history", []).append({"at": at, "by": who, "from": doc["status"], "to": doc["status"],
+                                              "note": f"Detached {ref(r)}" + (f": {body.text.strip()}" if body.text.strip() else ".")})
+        doc["updatedAt"] = at
+        put_issue(con, doc)
+        r["issue"], r["flag"] = None, ""
+        put_report(con, r)
+    return r
 
 
 @app.exception_handler(HTTPException)

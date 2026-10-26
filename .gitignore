@@ -8,3 +8,4 @@ build/
 .claude/.feature-list.sha
 .claude/settings.local.json
 docs/sales/
+.claude/worktrees/

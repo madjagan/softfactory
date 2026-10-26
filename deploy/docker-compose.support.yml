@@ -1,0 +1,36 @@
+# Support desk — CUSTOMER-FACING, one server for every org:
+#
+#   docker compose -f deploy/docker-compose.support.yml up -d --build
+#
+# Unlike the issue tracker, customers' browsers reach this one (the page and widget.js), so put
+# it behind your TLS reverse proxy WITHOUT basic auth: the tokens inside the app are the gate.
+# Set every token: with none at all the app runs open, for local dev only.
+#
+# deploy/support.env (never committed):
+#   SUPPORT_TOKEN=…            the support team's shared token (support, agent, admin)
+#   SUPPORT_TOKEN_<ORG>=…      one per org in SUPPORT_ORGS, e.g. SUPPORT_TOKEN_ACME
+#   SUPPORT_WIDGET_SECRET=…    the product's backend signs widget tokens with it
+#   SUPPORT_TRACKER_TOKEN=…    the tracker's ISSUES_TOKEN, so escalations reach its intake
+services:
+  support:
+    build:
+      context: ..
+      dockerfile: support/Dockerfile
+    container_name: {{slug}}-support
+    restart: unless-stopped
+    env_file:
+      - support.env
+    environment:
+      - SUPPORT_PREFIX=${SUPPORT_PREFIX:-SUP}
+      - SUPPORT_BRAND=${SUPPORT_BRAND:-{{project_name}} · Support}
+      - SUPPORT_ORGS=${SUPPORT_ORGS:?list the orgs, comma-separated}
+      - SUPPORT_AUTO_CLOSE_DAYS=${SUPPORT_AUTO_CLOSE_DAYS:-7}
+      - SUPPORT_CATEGORIES=${SUPPORT_CATEGORIES:-question,how-to,defect,account,other}
+      - SUPPORT_TRACKER_URL=${SUPPORT_TRACKER_URL:-}
+    volumes:
+      - {{slug}}_support_data:/data
+    expose:
+      - "3003"
+
+volumes:
+  {{slug}}_support_data:

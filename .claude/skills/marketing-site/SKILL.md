@@ -2,7 +2,7 @@
 name: marketing-site
 description: "Generate or refresh the product's marketing home page from the ledger: the brief in factory.yaml (marketing.*), the product summary (personas, value proposition canvas, alternatives), the PRD, the feature list and the user guides, styled with the project's design system. One HTML file at docs.marketing_site plus a private claude.ai link that stays the same on every regeneration. Every claim is traced to a source; nothing about customers, logos, testimonials, counts, offices or legal pages is invented. Triggers on: marketing site, marketing page, landing page, home page for the product, product website, refresh the marketing page, /marketing-site."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "1.1"
   category: "documentation"
 ---
@@ -16,7 +16,7 @@ ledger changes, the page is regenerated. It is never hand-edited.
 Read first: `factory.yaml` (`product.*`, `stack.design_system`, `marketing.*`, `docs.*`),
 `CLAUDE.md`, `docs.messaging` if `/messaging` has written it, and an existing
 `docs.marketing_site` if there is one. This framework's own page,
-`site/index.html` in the softfactory repo, is the reference build: it shows the section spine,
+`site/index.html` in the Solo Product Toolkit repo, is the reference build: it shows the section spine,
 the token block and the publish markers.
 
 ## No ledger

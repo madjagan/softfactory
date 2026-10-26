@@ -2,7 +2,7 @@
 name: fix-issue
 description: "Diagnose and fix a bug described in natural language via a disciplined, gated pipeline: description → reproducibility → root cause → fix → regression test → ensure no regression → log. Use whenever something is broken and should be fixed properly (not a quick patch). Triggers on: fix bug, fix issue, \"X is not working\", \"clicking does nothing\", broken, throws, diagnose, root cause, regression, \"why is this failing\", \"it crashes when\"."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "2.0"
   category: "engineering"
 ---
@@ -33,7 +33,7 @@ Read first: `factory.yaml` (`commands.*`, `tests.*`) and `CLAUDE.md`.
 6. **Verify at the boundary that broke.** If it broke in the running app or live API,
    verify there, not only in a unit that mocks that layer.
 7. **Delegate noisy searches** to a subagent; keep the findings.
-8. **Money, statutory and access changes need the user's explicit confirmation** before
+8. **Money, legal and access changes need the user's explicit confirmation** before
    Phase 4, whatever the report says.
 
 ---

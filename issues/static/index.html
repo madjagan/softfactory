@@ -157,7 +157,7 @@
 <script>
 (function () {
   const SLABEL = {new:'New', more_info:'More info', open:'Open', fixed:'Fixed', duplicate:'Duplicate', as_speced:'As speced', verified:'Verified', closed:'Closed'};
-  const state = { meta: null, issues: [], status: 'active', q: '', module: '', source: '', kind: '', mine: false, open: null, me: '', token: '', role: 'tester', poll: null };
+  const state = { meta: null, issues: [], reports: [], status: 'active', q: '', module: '', source: '', kind: '', mine: false, open: null, me: '', token: '', role: 'tester', poll: null };
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtDate = iso => iso ? String(iso).slice(0, 10) : '';
@@ -179,8 +179,8 @@
   }
   async function refresh() {
     try {
-      const [issues, stats] = await Promise.all([api('api/issues'), api('api/stats')]);
-      state.issues = issues; state.stats = stats;
+      const [issues, stats, reports] = await Promise.all([api('api/issues'), api('api/stats'), !state.meta || state.meta.customer ? [] : api('api/reports?intake=true')]);
+      state.issues = issues; state.stats = stats; state.reports = reports;
       $('#sub').textContent = `${state.me ? 'You are ' + state.me + ' · ' : ''}${stats.total} issues, ${stats.total - (stats.byStatus.closed || 0)} active.`;
       renderList();
     } catch (e) {
@@ -225,17 +225,32 @@
   function renderChips() {
     const counts = (state.stats && state.stats.byStatus) || {};
     const total = (state.stats && state.stats.total) || 0;
-    const items = [['active', 'Active', total - (counts.closed || 0)], ['all', 'All', total]].concat(state.meta.statuses.map(s => [s, SLABEL[s], counts[s] || 0]));
+    const items = [['active', 'Active', total - (counts.closed || 0)], ['all', 'All', total]]
+      .concat(state.meta.customer ? [] : [['intake', 'Intake', (state.stats.intake || 0) + (state.stats.flagged ? ` +${state.stats.flagged} flagged` : '')]])
+      .concat(state.meta.statuses.map(s => [s, SLABEL[s], counts[s] || 0]));
     $('#statusChips').innerHTML = items.map(([k, l, n]) => `<button class="chip ${state.status === k ? 'on' : ''}" data-s="${k}">${l} <span class="n">${n}</span></button>`).join('');
+  }
+  const refOf = r => r.board + '/' + r.key;
+  function renderIntake() {
+    const list = $('#list');
+    if (!state.reports.length) { list.innerHTML = '<div class="empty">Intake is empty: every customer report is on an internal issue.</div>'; return; }
+    list.innerHTML = state.reports.map(r => `<div class="row" data-r="${esc(refOf(r))}" role="button" tabindex="0">
+        <span class="k">${esc(refOf(r))}</span>
+        <span class="t">${esc(r.title)}<small>${esc(r.kind || '')}${r.severity ? ' · ' : ''}<span class="sev sev-${esc(r.severity)}">${esc(r.severity || '')}</span>${r.flag ? ` · <span class="tag">${esc(r.flag)}</span>` : ''}${r.issue ? ' · on ' + esc(r.issue) : ' · unlinked'}${(r.screenshots || []).length ? ' · 📎' + r.screenshots.length : ''}</small></span>
+        <span><span class="pill st-${esc(r.customerStatus)}">${SLABEL[r.customerStatus] || esc(r.customerStatus || '—')}</span></span>
+        <span class="m">${esc(r.module || '')}</span>
+        <span class="who">${esc(r.reporter || '')}</span>
+        <span class="d">${fmtDate(r.createdAt)}</span></div>`).join('');
   }
   function renderList() {
     renderChips();
+    if (state.status === 'intake') { renderIntake(); return; }
     const rows = visible();
     const list = $('#list');
     if (!rows.length) { list.innerHTML = `<div class="empty">${state.issues.length ? 'Nothing matches these filters.' : 'No issues yet. File the first one.'}</div>`; return; }
     list.innerHTML = rows.map(i => `<div class="row" data-k="${esc(i.key)}" role="button" tabindex="0">
         <span class="k">${esc(i.key)}</span>
-        <span class="t">${esc(i.title)}<small>${esc(i.kind || '')}${i.severity ? ' · ' : ''}<span class="sev sev-${esc(i.severity)}">${esc(i.severity || '')}</span>${i.source === 'split' ? ` · <span class="tag">Part of ${esc(i.sourceRef)}</span>` : ''}${(i.splitInto || []).length ? ` · <span class="tag">Split into ${i.splitInto.length}</span>` : ''}${i.source === 'customer' ? ' · <span class="tag">Customer</span>' : ''}${i.sourceRef ? ' · ' + esc(i.sourceRef) : ''}${i.screenshotCount ? ' · 📎' + i.screenshotCount : ''}</small></span>
+        <span class="t">${esc(i.title)}<small>${esc(i.kind || '')}${i.severity ? ' · ' : ''}<span class="sev sev-${esc(i.severity)}">${esc(i.severity || '')}</span>${i.source === 'split' ? ` · <span class="tag">Part of ${esc(i.sourceRef)}</span>` : ''}${(i.splitInto || []).length ? ` · <span class="tag">Split into ${i.splitInto.length}</span>` : ''}${(i.reports || []).length ? ` · <span class="tag">Customer ×${i.reports.length}</span>` : i.source === 'customer' ? ' · <span class="tag">Customer</span>' : ''}${i.sourceRef ? ' · ' + esc(i.sourceRef) : ''}${i.screenshotCount ? ' · 📎' + i.screenshotCount : ''}</small></span>
         <span><span class="pill st-${esc(i.status)}">${SLABEL[i.status] || esc(i.status)}</span></span>
         <span class="m">${esc(i.module || '')}</span>
         <span class="who">${esc(i.reporter || '')}</span>
@@ -247,8 +262,9 @@
   $('#fSource').addEventListener('change', e => { state.source = e.target.value; renderList(); });
   $('#fKind').addEventListener('change', e => { state.kind = e.target.value; renderList(); });
   $('#mine').addEventListener('change', e => { state.mine = e.target.checked; renderList(); });
-  $('#list').addEventListener('click', e => { const r = e.target.closest('[data-k]'); if (r) openDrawer(r.dataset.k); });
-  $('#list').addEventListener('keydown', e => { if (e.key === 'Enter') { const r = e.target.closest('[data-k]'); if (r) openDrawer(r.dataset.k); } });
+  const openRow = e => { const r = e.target.closest('[data-k],[data-r]'); if (r) (r.dataset.r ? openReport(r.dataset.r) : openDrawer(r.dataset.k)); };
+  $('#list').addEventListener('click', openRow);
+  $('#list').addEventListener('keydown', e => { if (e.key === 'Enter') openRow(e); });
 
   // ---------- drawer ----------
   function transitionsFor(i) {
@@ -260,6 +276,26 @@
     return t;
   }
   const shotsHtml = ids => (ids || []).length ? `<div class="shots">${ids.map(id => `<a href="uploads/${esc(id)}" target="_blank" rel="noopener"><img src="uploads/${esc(id)}" alt="screenshot" loading="lazy"></a>`).join('')}</div>` : '';
+  const commentsHtml = cms => (cms || []).length ? `<ul class="timeline">${cms.map(cm => `<li><span class="at">${fmtDate(cm.at)}<br><span class="by">${esc(who(cm.by) || '')}</span></span><span class="desc">${rich(cm.text)}${shotsHtml(cm.screenshots)}</span></li>`).join('')}</ul>` : '';
+  const custPill = r => `<span class="pill st-${esc(r.customerStatus)}">${SLABEL[r.customerStatus] || esc(r.customerStatus || '—')}</span>${r.flag ? ` <span class="tag">${esc(r.flag)}</span>` : ''}`;
+  const reportsCard = rs => `<div class="card"><h3>Customer reports <span class="mono" style="font-weight:400">${rs.length}</span></h3><ul class="timeline">${rs.map(r => `<li><span class="at"><a href="#" class="mono" data-report="${esc(refOf(r))}">${esc(refOf(r))}</a><br><span class="by">${esc(r.reporter || '')}</span></span><span>${custPill(r)} <b>${esc(r.title)}</b>${shotsHtml(r.screenshots)}${(r.comments || []).map(cm => `<div class="desc" style="margin-top:4px"><span class="by">${esc(who(cm.by) || '')}:</span> ${rich(cm.text)}</div>${shotsHtml(cm.screenshots)}`).join('')}</span></li>`).join('')}</ul></div>`;
+  async function openReport(rf) {
+    let r; try { r = await api('api/reports/' + rf.split('/').map(encodeURIComponent).join('/')); } catch (e) { toast(e.message); return; }
+    const host = $('#drawerHost');
+    host.innerHTML = `<div class="scrim" id="scrim"></div><div class="drawer" role="dialog" aria-label="Report ${esc(rf)}">
+      <button class="btn sm close" id="dclose">Close ✕</button>
+      <div class="eyebrow mono">${esc(rf)} · Customer report</div>
+      <h2>${esc(r.title)}</h2>
+      <div class="meta">${custPill(r)}<span>${esc(r.kind || '')}</span><span class="sev sev-${esc(r.severity)}">${esc(r.severity || '')}</span><span>${esc(r.module || '')}</span><span>Reported by ${esc(r.reporter || 'unknown')}</span><span class="mono">${fmtDate(r.createdAt)}</span>${r.build ? `<span class="mono">${esc(r.build)}</span>` : ''}</div>
+      <div class="card"><h3>Description</h3><div class="desc">${rich(r.description || '')}</div>${shotsHtml(r.screenshots)}</div>
+      ${(r.comments || []).length ? `<div class="card"><h3>Their comments</h3>${commentsHtml(r.comments)}</div>` : ''}
+      <div class="card"><h3>Triage</h3><div class="dstate">${r.issue ? `On <a href="#" class="mono" data-open="${esc(r.issue)}">${esc(r.issue)}</a>.` : 'In intake: not on an internal issue yet.'}${r.release ? ` Their board is told <b>${SLABEL[r.release.status]}</b>.` : ''}</div><div class="hint">The Issue Agent triages with <code>tools/issues_cli.py</code>: attach, promote, ask, detach.</div></div>
+    </div>`;
+    const close = () => { host.innerHTML = ''; };
+    $('#scrim').onclick = close; $('#dclose').onclick = close;
+    host.querySelectorAll('[data-open]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openDrawer(a.dataset.open); }));
+    document.onkeydown = e => { if (e.key === 'Escape') close(); };
+  }
   async function openDrawer(key) {
     state.open = key;
     let i; try { i = await api('api/issues/' + encodeURIComponent(key)); } catch (e) { toast(e.message); return; }
@@ -275,10 +311,11 @@
       <div class="card"><h3>Description</h3><div class="desc">${rich(i.description || '')}</div>${shotsHtml(i.screenshots)}</div>
       ${(i.splitInto || []).length ? `<div class="card"><h3>Split into</h3><div class="desc">${i.splitInto.map(k => `<a href="#" class="mono" data-open="${esc(k)}">${esc(k)}</a>`).join(' · ')}</div></div>` : ''}
       ${i.source === 'split' && i.sourceRef ? `<div class="card"><h3>Part of</h3><div class="desc"><a href="#" class="mono" data-open="${esc(i.sourceRef)}">${esc(i.sourceRef)}</a></div></div>` : ''}
+      ${(i.customerReports || []).length ? reportsCard(i.customerReports) : ''}
       ${state.meta.customer ? '' : agentRows.length || c.processedAt ? `<div class="card agent"><h3><span class="orb"></span>Comments from Analyzer${c.processedAt ? ` <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0">${fmtDate(c.processedAt)}</span>` : ''}</h3><div class="kv">${agentRows.map(r => `<div class="l">${r[0]}</div><div class="v">${rich(r[1])}</div>`).join('')}</div></div>` : `<div class="card agent"><h3><span class="orb"></span>Comments from Analyzer</h3><div class="hint">Not processed yet. The Issue Agent picks up New and Open issues.</div></div>`}
-      ${(i.comments || []).length ? `<div class="card"><h3>Information added</h3><ul class="timeline">${i.comments.map(cm => `<li><span class="at">${fmtDate(cm.at)}<br><span class="by">${esc(who(cm.by) || '')}</span></span><span class="desc">${rich(cm.text)}${shotsHtml(cm.screenshots)}</span></li>`).join('')}</ul></div>` : ''}
+      ${(i.comments || []).length ? `<div class="card"><h3>Information added</h3>${commentsHtml(i.comments)}</div>` : ''}
       <div class="card"><h3>Your move</h3>
-        ${!state.meta.customer && i.source === 'customer' && ['fixed', 'duplicate', 'as_speced'].includes(i.status) ? `<div class="dstate" style="color:var(--am)">Customer-filed: the customer still sees this as ${i.status === 'fixed' ? 'New/Open' : 'open'} — marking it <b>Verified</b> here is what releases <b>${SLABEL[i.status]}</b> to their board.</div>` : ''}
+        ${!state.meta.customer && (i.reports || []).length && ['fixed', 'duplicate', 'as_speced'].includes(i.status) ? `<div class="dstate" style="color:var(--am)">Customer-reported: their boards do not show this verdict yet — marking it <b>Verified</b> here is what releases it to every linked report${i.status === 'duplicate' ? ' (as the verdict of the issue it duplicates, once that one is verified)' : ''}.</div>` : ''}
         <div class="dstate">${(state.meta.customer ? {new:'Received. Waiting for the product team.', open:'Reopened with your information; waiting for the product team.', more_info:'The product team needs more information from you — see the latest note below, then answer and reopen.', fixed:'Fixed. Please check it on the next build, then mark Verified — or reopen with what you see.', duplicate:'The same defect is already being worked. If you agree, mark Verified.', as_speced:'This is the specified behaviour. If you agree, mark Verified; otherwise reopen and say what you expected.', verified:'Verified. Close it when done.', closed:'Closed.'} : {new:'Waiting for the Issue Agent to process.', open:'Reopened with your information; waiting for the Issue Agent.', more_info:'The Issue Agent needs more information from you.', fixed:'The Issue Agent fixed it. Run the recommended human tests, then mark Verified.', duplicate:'The Issue Agent marked this a duplicate. If you agree, mark Verified.', as_speced:'Issue Analyzer says this is the specified behaviour. If you agree, mark Verified; otherwise reopen and say why.', verified:'Verified. Close it when done.', closed:'Closed.'})[i.status] || ''}</div>
         <label class="f" for="note">Note${tr.some(t => t.note) ? ' (required to reopen or answer)' : ''}</label>
         <textarea id="note" style="min-height:70px" placeholder="${state.meta.customer ? 'What you saw, steps, or the answer we asked for…' : 'What you saw, steps, or the answer the Issue Agent asked for…'} Paste a screenshot straight into this box (Ctrl+V / ⌘V)."></textarea>
@@ -296,6 +333,7 @@
     const close = () => { host.innerHTML = ''; state.open = null; };
     $('#scrim').onclick = close; $('#dclose').onclick = close;
     host.querySelectorAll('[data-open]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openDrawer(a.dataset.open); }));
+    host.querySelectorAll('[data-report]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openReport(a.dataset.report); }));
     document.onkeydown = e => { if (e.key === 'Escape') close(); };
     let pendingShots = [];
     const cf = $('#cfile'), cdrop = $('#cdrop');
@@ -341,7 +379,7 @@
         <div><label class="f" for="nModule">Module</label><select id="nModule" style="width:100%">${m.modules.map(x => `<option value="${x}">${x}</option>`).join('')}</select></div>
         <div><label class="f" for="nKind">Kind</label><select id="nKind" style="width:100%"><option value="bug">Bug</option><option value="enhancement">Enhancement</option><option value="question">Question</option><option value="decision">Decision needed</option></select></div>
         <div><label class="f" for="nSev">Severity</label><select id="nSev" style="width:100%">${m.severities.map(s => `<option value="${s}" ${s === 'medium' ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
-        <div><label class="f" for="nPersona">Logged in as</label><input type="text" id="nPersona" style="width:100%" placeholder="e.g. Fatima Hassan (HR)"></div>
+        <div><label class="f" for="nPersona">Logged in as</label><input type="text" id="nPersona" style="width:100%" placeholder="e.g. Priya Shah (Admin)"></div>
       </div>
       <label class="f" for="nDesc">Steps, expected, actual</label><textarea id="nDesc" placeholder="1. Go to …&#10;2. Click …&#10;Expected: …&#10;Actual: …&#10;&#10;Paste a screenshot straight into this box."></textarea>
       <label class="f" for="nBuild">Build (bottom-left of the app sidebar)</label><input type="text" id="nBuild" class="mono" style="width:100%" placeholder="3.0.0+build.437.697bd3a">
@@ -383,7 +421,7 @@
       $('#fSource').hidden = true;
       document.querySelector('.flow').innerHTML = '<b>Flow.</b> New → the product team sets <b>Fixed</b>, <b>Duplicate</b>, <b>As speced</b> or <b>More info</b> → you mark <b>Verified</b> (or answer and reopen) → <b>Closed</b>. You see each status change and the note that comes with it; attach a screenshot wherever you can.';
     } else if (state.meta.mirrors) {
-      document.querySelector('.flow').innerHTML += ' Issues filed on the customer board arrive here tagged <span class="tag">Customer</span>; a More-info question reaches them at once, a verdict only after it is marked Verified here.';
+      document.querySelector('.flow').innerHTML += ` Reports filed on the customer boards (${state.meta.boards.map(esc).join(', ')}) land in <b>Intake</b>; the Issue Agent attaches each to an issue or promotes it to a new one, tagged <span class="tag">Customer</span>. A question reaches only the customer it is asked of, at once; a verdict reaches every linked report only after the issue is marked Verified here.`;
     }
     if (!(state.meta.roles || ['tester']).includes(state.role)) { state.role = 'tester'; try { localStorage.setItem('issues.role', 'tester'); } catch (e) {} }
     $('#whoBtn').textContent = state.me || 'Who are you?';

@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-"""The Issue Agent's side of the issue tracker (issues/app.py): list, show, verdict, screenshots.
+"""The Issue Agent's side of the issue tracker (issues/app.py): list, show, verdict, screenshots, triage.
 
   python3 tools/issues_cli.py list [--status new,open]
-  python3 tools/issues_cli.py show IS-512
-  python3 tools/issues_cli.py shots IS-512 [--out DIR]           # download screenshots to view
+  python3 tools/issues_cli.py show IS-512 | acme/ACME-501         # an issue (with its customer reports) or one report
+  python3 tools/issues_cli.py shots IS-512 | acme/ACME-501 [--out DIR]   # download screenshots to view
   python3 tools/issues_cli.py verdict IS-512 --status fixed --note "…" --root-cause "…" --fix-proposed "…" --fix "…" \
       --tests "…" --human-tests "…" [--files "…"] [--duplicate-of IS-3] [--spec-ref "§3.x"] [--info-needed "…"]
   python3 tools/issues_cli.py comment IS-512 --note "…"
   python3 tools/issues_cli.py split IS-512 --part "title | module | kind | severity | description" [--part …]   # one report → n issues
+  python3 tools/issues_cli.py intake                             # customer reports not on an issue, or flagged
+  python3 tools/issues_cli.py attach acme/ACME-501 --to IS-612   # the same defect as an existing issue
+  python3 tools/issues_cli.py promote acme/ACME-501              # a new defect: the report becomes a new issue
+  python3 tools/issues_cli.py ask acme/ACME-501 "question"       # more_info to that one customer only
+  python3 tools/issues_cli.py detach acme/ACME-501 [--note "…"]  # unlink, back to intake
+  python3 tools/issues_cli.py sync                               # pull every customer board now
 
 Env: ISSUES_URL (default http://127.0.0.1:3002), ISSUES_TOKEN (if the server requires one).
 """
@@ -58,16 +64,22 @@ def cmd_list(a):
     print(f"{len(rows)} issue(s)")
 
 
+def doc_path(key: str) -> str:
+    return f"api/reports/{key}" if "/" in key else f"api/issues/{key}"   # acme/ACME-501 is a customer report
+
+
 def cmd_show(a):
-    print(json.dumps(call("GET", f"api/issues/{a.key}"), indent=2, ensure_ascii=False))
+    print(json.dumps(call("GET", doc_path(a.key)), indent=2, ensure_ascii=False))
 
 
 def cmd_shots(a):
-    doc = call("GET", f"api/issues/{a.key}")
-    ids = list(doc.get("screenshots") or [])
-    for c in doc.get("comments") or []:
-        ids += c.get("screenshots") or []
-    out = Path(a.out or f"/tmp/issues-{a.key}")
+    doc = call("GET", doc_path(a.key))
+    ids = []
+    for d in [doc, *(doc.get("customerReports") or [])]:
+        ids += d.get("screenshots") or []
+        for c in d.get("comments") or []:
+            ids += c.get("screenshots") or []
+    out = Path(a.out or f"/tmp/issues-{a.key.replace('/', '-')}")
     out.mkdir(parents=True, exist_ok=True)
     for i in ids:
         (out / i).write_bytes(call("GET", f"uploads/{i}", raw=True))
@@ -107,10 +119,40 @@ def cmd_unsplit(a):
     print(f"{doc['key']}: split folded back; the parts are duplicates of it")
 
 
+def cmd_intake(a):
+    rows = call("GET", "api/reports?intake=true")
+    for r in rows:
+        print(f"{r['board'] + '/' + r['key']:22} {r['flag'] or '-':9} {r['customerStatus'] or '':10} {r['issue'] or 'unlinked':9} {r['reporter']:14} {r['title']}")
+    print(f"{len(rows)} report(s) to triage")
+
+
+def cmd_attach(a):
+    doc = call("POST", f"api/reports/{a.ref}/attach", {"to": a.to, "note": a.note or ""})
+    print(f"{a.ref} → {doc['key']} (now {len(doc['reports'])} report(s))")
+
+
+def cmd_promote(a):
+    doc = call("POST", f"api/reports/{a.ref}/promote", {"text": a.note or ""})
+    print(f"{a.ref} → {doc['key']} new  {doc['module']:10} {doc['title']}")
+
+
+def cmd_ask(a):
+    call("POST", f"api/reports/{a.ref}/ask", {"text": a.question})
+    print(f"{a.ref}: more_info goes to that board at the next sync")
+
+
+def cmd_detach(a):
+    call("POST", f"api/reports/{a.ref}/detach", {"text": a.note or ""})
+    print(f"{a.ref}: detached, back in intake — promote it or attach it elsewhere")
+
+
 def cmd_sync(a):
-    rep = call("POST", "api/sync")
-    print(f"mirrored {len(rep['created'])} new, {rep['comments']} comment(s), {rep['customerMoves']} customer move(s); pushed {rep['pushed'] or 'nothing'}"
-          + (f"; skipped {rep['skipped']}" if rep.get("skipped") else ""))
+    for board, rep in call("POST", "api/sync").items():
+        if "error" in rep:
+            print(f"{board}: {rep['error']}")
+            continue
+        print(f"{board}: {len(rep['intake'])} new to intake, {rep['comments']} comment(s), {rep['customerMoves']} customer move(s); pushed {rep['pushed'] or 'nothing'}"
+              + (f"; skipped {rep['skipped']}" if rep.get("skipped") else ""))
 
 
 def main():
@@ -128,7 +170,13 @@ def main():
     s = sub.add_parser("split", help="one report → several independent issues (1-n); each --part is 'title | module | kind | severity | description'")
     s.add_argument("key"); s.add_argument("--part", action="append", required=True); s.add_argument("--note"); s.set_defaults(fn=cmd_split)
     s = sub.add_parser("unsplit", help="fold a split back into its parent; the parts become duplicates of it"); s.add_argument("key"); s.add_argument("--note"); s.set_defaults(fn=cmd_unsplit)
-    s = sub.add_parser("sync", help="mirror the customer board now (it also runs on its own every 30 s)"); s.set_defaults(fn=cmd_sync)
+    s = sub.add_parser("intake", help="customer reports not on an issue yet, or flagged (answered / reopened)"); s.set_defaults(fn=cmd_intake)
+    s = sub.add_parser("attach", help="link a report (board/KEY) to an existing issue; again to the same issue clears its flag")
+    s.add_argument("ref"); s.add_argument("--to", required=True); s.add_argument("--note"); s.set_defaults(fn=cmd_attach)
+    s = sub.add_parser("promote", help="a new defect: the report becomes a new issue, linked to it"); s.add_argument("ref"); s.add_argument("--note"); s.set_defaults(fn=cmd_promote)
+    s = sub.add_parser("ask", help="more_info to that one report's board"); s.add_argument("ref"); s.add_argument("question"); s.set_defaults(fn=cmd_ask)
+    s = sub.add_parser("detach", help="unlink a report; it goes back to intake"); s.add_argument("ref"); s.add_argument("--note"); s.set_defaults(fn=cmd_detach)
+    s = sub.add_parser("sync", help="sync every customer board now (it also runs on its own every 30 s)"); s.set_defaults(fn=cmd_sync)
     a = p.parse_args()
     a.fn(a)
 

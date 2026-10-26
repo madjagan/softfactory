@@ -2,7 +2,7 @@
 name: guide-screenshots
 description: "Given a tester's guide (docs/<SUBJECT>_TEST_GUIDE.md), produce its annotated screenshot storyboard — one shot per step with a red ring, a pointer and a numbered caption, captured on a fresh local test stack — and, on request, one narrated video per part. Triggers on: screenshots for the guide, capture the steps, storyboard, walkthrough images, narrated video, user help video, /guide-screenshots."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "1.0"
   category: "documentation"
 ---
@@ -12,7 +12,7 @@ metadata:
 The argument is the guide: `docs/<SUBJECT>_TEST_GUIDE.md` (written by `/test-guide`). The
 output is `docs/screenshots/<subject>/`: numbered PNGs, `index.json`, a `README.md`
 storyboard, and — only when asked — `narration.json` and `video/*.mp4`.
-`tools/screenshots/storyboards/example-payroll.mjs` is the storyboard shape to copy.
+`tools/screenshots/storyboards/example-invoices.mjs` is the storyboard shape to copy.
 
 ## The tooling (all under `tools/screenshots/`)
 

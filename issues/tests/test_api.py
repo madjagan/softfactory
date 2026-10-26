@@ -185,12 +185,16 @@ def test_a_board_can_refuse_the_admin_role(tmp_path, monkeypatch):
         assert c.post(f"/api/issues/{k}/transition", json={"to": "fixed"}, headers=hdr("agent", "agent")).status_code == 200
 
 
-# ---------------- the customer board and its mirror ----------------
+# ---------------- the customer boards and triage ----------------
+def _clear_board_env():
+    for k in [k for k in os.environ if k.startswith("FEEDBACK_")] + ["ISSUES_TOKEN", "ISSUES_BRAND", "ISSUES_PREFIX", "ISSUES_ROLES", "ISSUES_CUSTOMER"]:
+        os.environ.pop(k, None)
+
+
 def _load_board(name: str, data_dir, env: dict):
     """A second, independent copy of the app module with its own config and database."""
     import importlib.util
-    for k in ("ISSUES_TOKEN", "ISSUES_BRAND", "ISSUES_PREFIX", "ISSUES_ROLES", "ISSUES_CUSTOMER", "FEEDBACK_SYNC_URL"):
-        os.environ.pop(k, None)
+    _clear_board_env()
     os.environ["ISSUES_DATA"] = str(data_dir)
     os.environ.update(env)
     spec = importlib.util.spec_from_file_location(name, ROOT / "issues" / "app.py")
@@ -203,8 +207,8 @@ def _load_board(name: str, data_dir, env: dict):
 class FakeRemote:
     """The customer board reached through its TestClient, the way Remote reaches it over HTTP."""
 
-    def __init__(self, client, actor):
-        self.c, self.h = client, {"X-Role": "agent", "X-Actor": actor}
+    def __init__(self, client, actor, token=""):
+        self.c, self.h = client, {"X-Role": "agent", "X-Actor": actor, **({"X-Issues-Token": token} if token else {})}
 
     def get_json(self, path):
         r = self.c.get(path, headers=self.h); assert r.status_code == 200, r.text; return r.json()
@@ -240,73 +244,331 @@ def test_a_customer_board_withholds_the_analysis(boards):
     assert "secret" not in fb.get(f"/api/issues/{k}", headers=hdr()).text
 
 
-def test_customer_issues_mirror_in_and_only_status_travels_back(boards):
-    customer, fb, internal, tp = boards
-    remote = FakeRemote(fb, internal.PUSH_ACTOR)
-    # 1. a customer files with a screenshot and adds a comment
-    up = fb.post("/api/uploads", files={"file": ("s.png", io.BytesIO(PNG), "image/png")}, headers=hdr("Nousheed")).json()["id"]
-    f = fb.post("/api/issues", json={"title": "Payslip is blank", "description": "steps", "module": "api", "screenshots": [up]}, headers=hdr("Nousheed")).json()
-    fb.post(f"/api/issues/{f['key']}/comments", json={"text": "also on Safari"}, headers=hdr("Nousheed"))
-    rep = internal.sync_feedback(remote)
-    assert rep["created"] == [f"IS-501←{f['key']}"] and rep["comments"] == 1
-    m = tp.get("/api/issues/IS-501", headers=hdr()).json()
-    assert m["source"] == "customer" and m["sourceRef"] == f["key"] and m["reporter"] == "Nousheed" and m["status"] == "new"
-    assert m["screenshots"] == [up] and tp.get(f"/uploads/{up}").status_code == 200
-    assert m["comments"][0]["text"] == "also on Safari"
-    assert internal.sync_feedback(remote) == {"created": [], "comments": 0, "customerMoves": 0, "pushed": [], "skipped": []}
-    # 2. the agent asks a question here → the customer sees more_info and the question, nothing else
-    tp.post("/api/issues/IS-501/transition", json={"to": "more_info", "agent": {"rootCause": "cannot see it", "infoNeeded": "Which month?"}}, headers=hdr("agent", "agent"))
-    rep = internal.sync_feedback(remote)
-    assert rep["pushed"] == [f"{f['key']}→more_info"]
-    fdoc = fb.get(f"/api/issues/{f['key']}", headers=hdr()).json()
-    assert fdoc["status"] == "more_info" and fdoc["agent"] == {} and "cannot see it" not in fb.get(f"/api/issues/{f['key']}", headers=hdr()).text
-    assert fdoc["history"][-1]["by"] == internal.PUSH_ACTOR and fdoc["history"][-1]["note"] == "Which month?"
-    assert internal.sync_feedback(remote)["pushed"] == []        # pushed once, not again
-    # 3. the customer answers and reopens → the mirror reopens with the answer
-    fb.post(f"/api/issues/{f['key']}/transition", json={"to": "open", "note": "August"}, headers=hdr("Nousheed"))
-    rep = internal.sync_feedback(remote)
-    assert rep["customerMoves"] == 1 and rep["comments"] == 1
-    m = tp.get("/api/issues/IS-501", headers=hdr()).json()
-    assert m["status"] == "open" and m["history"][-1]["note"] == "August" and m["comments"][-1]["text"] == "August"
-    # 4. the agent fixes it → NOTHING travels yet: the customer still sees Open until it is verified here
-    tp.post("/api/issues/IS-501/transition", json={"to": "fixed", "agent": {"rootCause": "r", "fix": "f", "tests": "t", "humanTests": "h"}}, headers=hdr("agent", "agent"))
-    assert internal.sync_feedback(remote)["pushed"] == []
-    assert fb.get(f"/api/issues/{f['key']}", headers=hdr()).json()["status"] == "open"
-    # 5. an internal tester verifies → Fixed is released to the customer with a plain note, analysis withheld
-    tp.post("/api/issues/IS-501/transition", json={"to": "verified", "note": "checked on build 510"}, headers=hdr("Priya"))
-    assert internal.sync_feedback(remote)["pushed"] == [f"{f['key']}→fixed"]
-    fdoc = fb.get(f"/api/issues/{f['key']}", headers=hdr()).json()
-    assert fdoc["status"] == "fixed" and fdoc["agent"] == {} and "build 510" not in fb.get(f"/api/issues/{f['key']}", headers=hdr()).text
-    assert fdoc["history"][-1]["by"] == internal.PUSH_ACTOR and fdoc["history"][-1]["note"].startswith("Fixed")
-    assert internal.sync_feedback(remote)["pushed"] == []
-    # 6. the customer verifies and closes → the mirror closes; the internal verification record stays
-    fb.post(f"/api/issues/{f['key']}/transition", json={"to": "verified"}, headers=hdr("Nousheed"))
-    fb.post(f"/api/issues/{f['key']}/transition", json={"to": "closed"}, headers=hdr("Nousheed"))
-    assert internal.sync_feedback(remote)["customerMoves"] == 1        # verified was already the mirror's state
-    m = tp.get("/api/issues/IS-501", headers=hdr()).json()
-    assert m["status"] == "closed" and m["verification"]["by"] == "Priya" and m["agent"]["fix"] == "f"
+@pytest.fixture()
+def tri(tmp_path):
+    """Two customer boards (acme, globex), each its own module, database, token and prefix, and the
+    internal board that triages both. Sync reaches each board through its TestClient."""
+    from types import SimpleNamespace
+    cust = {"ISSUES_ROLES": "tester,agent", "ISSUES_CUSTOMER": "1"}
+    acme = _load_board("issues_app_acme", tmp_path / "acme", {**cust, "ISSUES_PREFIX": "ACME", "ISSUES_TOKEN": "a-tok"})
+    globex = _load_board("issues_app_globex", tmp_path / "globex", {**cust, "ISSUES_PREFIX": "GLX", "ISSUES_TOKEN": "g-tok"})
+    internal = _load_board("issues_app_tri", tmp_path / "tp", {
+        "FEEDBACK_BOARDS": "acme=http://acme-feedback:3002/, globex=http://globex-feedback:3002",
+        "FEEDBACK_TOKEN_ACME": "a-tok", "FEEDBACK_TOKEN_GLOBEX": "g-tok", "FEEDBACK_SYNC_INTERVAL": "0"})
+    try:
+        with TestClient(acme.app) as a, TestClient(globex.app) as g, TestClient(internal.app) as tp:
+            real = dict(internal.REMOTES)
+            internal.REMOTES = {"acme": FakeRemote(a, internal.PUSH_ACTOR, real["acme"].token),
+                                "globex": FakeRemote(g, internal.PUSH_ACTOR, real["globex"].token)}
+            yield SimpleNamespace(acme=acme, globex=globex, internal=internal, a=a, g=g, tp=tp, real=real,
+                                  ah=lambda n="Alice": {**hdr(n), "X-Issues-Token": "a-tok"},
+                                  gh=lambda n="Bob": {**hdr(n), "X-Issues-Token": "g-tok"})
+    finally:
+        _clear_board_env()
 
 
-def test_a_customer_reopen_after_release_reopens_the_mirror_and_a_verdict_verified_here_is_released(boards):
-    customer, fb, internal, tp = boards
-    remote = FakeRemote(fb, internal.PUSH_ACTOR)
-    f = fb.post("/api/issues", json={"title": "Column header says Role", "description": "steps"}, headers=hdr("Nousheed")).json()
-    internal.sync_feedback(remote)
-    tp.post("/api/issues/IS-501/transition", json={"to": "as_speced", "agent": {"specRef": "PRD 3.1"}}, headers=hdr("agent", "agent"))
-    assert internal.sync_feedback(remote)["pushed"] == []
-    tp.post("/api/issues/IS-501/transition", json={"to": "verified"}, headers=hdr("Priya"))
-    assert internal.sync_feedback(remote)["pushed"] == [f"{f['key']}→as_speced"]
-    fb.post(f"/api/issues/{f['key']}/transition", json={"to": "open", "note": "I expected Designation"}, headers=hdr("Nousheed"))
-    rep = internal.sync_feedback(remote)
-    assert rep["customerMoves"] == 1
-    m = tp.get("/api/issues/IS-501", headers=hdr()).json()
-    assert m["status"] == "open" and m["comments"][-1]["text"] == "I expected Designation"
+AGENT = hdr("Issue Agent", "agent")
+
+
+def _file(c, h, title, **over):
+    r = c.post("/api/issues", json={"title": title, "description": "steps", "module": "api", **over}, headers=h)
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def _sync(t):
+    r = t.tp.post("/api/sync", headers=AGENT)
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def _shot(c, h):
+    return c.post("/api/uploads", files={"file": ("s.png", io.BytesIO(PNG), "image/png")}, headers=h).json()["id"]
+
+
+def _two_linked(t):
+    """acme/ACME-501 promoted to IS-501, globex/GLX-501 attached to it."""
+    _file(t.a, t.ah(), "Invoice is blank")
+    _file(t.g, t.gh(), "Blank invoice in August")
+    _sync(t)
+    assert t.tp.post("/api/reports/acme/ACME-501/promote", json={}, headers=AGENT).status_code == 201
+    assert t.tp.post("/api/reports/globex/GLX-501/attach", json={"to": "IS-501"}, headers=AGENT).status_code == 200
+
+
+def _fix_and_verify(t, key="IS-501"):
+    t.tp.post(f"/api/issues/{key}/transition", json={"to": "fixed", "agent": {"rootCause": "secret cause", "fix": "f"}}, headers=AGENT)
+    assert t.tp.post(f"/api/issues/{key}/transition", json={"to": "verified", "note": "checked on build 510"}, headers=hdr("Priya")).status_code == 200
+
+
+def test_g1_each_customer_board_is_its_own_deployment_database_token_and_prefix(tri):
+    t = tri
+    assert {n: (r.base, r.token) for n, r in t.real.items()} == {"acme": ("http://acme-feedback:3002", "a-tok"), "globex": ("http://globex-feedback:3002", "g-tok")}
+    assert t.acme.DB_PATH != t.globex.DB_PATH != t.internal.DB_PATH
+    assert t.a.get("/api/issues", headers={**hdr(), "X-Issues-Token": "g-tok"}).status_code == 401
+    assert _file(t.a, t.ah(), "Acme thing")["key"] == "ACME-501" and _file(t.g, t.gh(), "Globex thing")["key"] == "GLX-501"
+    assert t.tp.get("/api/meta", headers=hdr()).json()["boards"] == ["acme", "globex"]
+    rep = _sync(t)
+    assert rep["acme"]["intake"] == ["acme/ACME-501"] and rep["globex"]["intake"] == ["globex/GLX-501"]
+    # deploy: one internal service that names every board, one status-only feedback service per customer
+    compose = (ROOT / "deploy" / "docker-compose.issues.yml").read_text()
+    assert compose.count("ISSUES_CUSTOMER=1") == 2 and "FEEDBACK_BOARDS=" in compose and "FEEDBACK_SYNC_URL" not in compose
+    for n in ("acme", "globex"):
+        assert f"feedback-{n}:" in compose and f"FEEDBACK_TOKEN_{n.upper()}" in compose and f"{{{{slug}}}}_feedback_{n}_data" in compose
+
+
+def test_g1_one_board_down_does_not_hold_up_the_others(tri):
+    t = tri
+    _file(t.g, t.gh(), "Globex thing")
+    t.internal.REMOTES["acme"] = t.internal.Remote("http://127.0.0.1:9", "")
+    rep = _sync(t)
+    assert "error" in rep["acme"] and rep["globex"]["intake"] == ["globex/GLX-501"]
+
+
+def test_g3_sync_creates_no_issues_and_g4_promote_keeps_the_customers_words(tri):
+    t = tri
+    up = _shot(t.a, t.ah())
+    _file(t.a, t.ah(), "Invoice is blank", description="open August", screenshots=[up], severity="high")
+    t.a.post("/api/issues/ACME-501/comments", json={"text": "also on Safari"}, headers=t.ah())
+    rep = _sync(t)
+    assert rep["acme"]["intake"] == ["acme/ACME-501"] and rep["acme"]["comments"] == 1
+    assert t.tp.get("/api/issues", headers=hdr()).json() == []
+    assert t.tp.get("/api/stats", headers=hdr()).json() == {"byStatus": {}, "total": 0, "intake": 1, "flagged": 0}
+    [r] = t.tp.get("/api/reports?intake=true", headers=hdr()).json()
+    assert (r["board"], r["key"], r["issue"], r["reporter"], r["customerStatus"]) == ("acme", "ACME-501", None, "Alice", "new")
+    assert r["screenshots"] == [up] and t.tp.get(f"/uploads/{up}").status_code == 200 and r["comments"][0]["text"] == "also on Safari"
+    assert _sync(t)["acme"] == {"intake": [], "comments": 0, "customerMoves": 0, "pushed": [], "skipped": []}
+    # promote: the first report becomes the issue
+    assert t.tp.post("/api/reports/acme/ACME-501/promote", json={}, headers=hdr()).status_code == 403
+    r = t.tp.post("/api/reports/acme/ACME-501/promote", json={}, headers=AGENT)
+    assert r.status_code == 201, r.text
+    doc = r.json()
+    assert (doc["key"], doc["title"], doc["description"], doc["screenshots"], doc["reporter"], doc["severity"], doc["source"]) == \
+        ("IS-501", "Invoice is blank", "open August", [up], "Alice", "high", "customer")
+    assert doc["reports"] == ["acme/ACME-501"] and doc["customerReports"][0]["issue"] == "IS-501"
+    assert t.tp.get("/api/reports?intake=true", headers=hdr()).json() == []
+    assert t.tp.post("/api/reports/acme/ACME-501/promote", json={}, headers=AGENT).status_code == 409
+    assert _sync(t)["acme"]["intake"] == [] and len(t.tp.get("/api/issues", headers=hdr()).json()) == 1
+
+
+def test_g4_attach_links_a_report_to_an_existing_issue(tri):
+    t = tri
+    k = file_issue(t.tp)["key"]
+    other = file_issue(t.tp, title="Something else")["key"]
+    _file(t.g, t.gh(), "Cancel does nothing for me")
+    _sync(t)
+    r = t.tp.post("/api/reports/globex/GLX-501/attach", json={"to": k}, headers=AGENT)
+    assert r.status_code == 200, r.text
+    assert r.json()["reports"] == ["globex/GLX-501"] and "Attached globex/GLX-501" in r.json()["history"][-1]["note"]
+    assert t.tp.get("/api/reports/globex/GLX-501", headers=hdr()).json()["issue"] == k
+    assert t.tp.post("/api/reports/globex/GLX-501/attach", json={"to": other}, headers=AGENT).status_code == 409
+    assert t.tp.post("/api/reports/globex/GLX-501/attach", json={"to": k}, headers=AGENT).json()["reports"] == ["globex/GLX-501"]
+    assert t.tp.post("/api/reports/globex/GLX-501/attach", json={"to": "IS-999"}, headers=AGENT).status_code == 404
+    assert t.tp.post("/api/reports/globex/GLX-501/attach", json={"to": k}, headers=hdr()).status_code == 403
+
+
+def test_g5_the_internal_issue_lists_every_linked_report(tri):
+    t = tri
+    up = _shot(t.g, t.gh())
+    _file(t.a, t.ah(), "Invoice is blank")
+    _file(t.g, t.gh(), "Blank invoice in August", screenshots=[up])
+    t.g.post("/api/issues/GLX-501/comments", json={"text": "every user"}, headers=t.gh())
+    _sync(t)
+    t.tp.post("/api/reports/acme/ACME-501/promote", json={}, headers=AGENT)
+    t.tp.post("/api/reports/globex/GLX-501/attach", json={"to": "IS-501"}, headers=AGENT)
+    doc = t.tp.get("/api/issues/IS-501", headers=hdr()).json()
+    assert doc["reports"] == ["acme/ACME-501", "globex/GLX-501"]
+    rows = {r["board"]: r for r in doc["customerReports"]}
+    assert (rows["acme"]["key"], rows["acme"]["reporter"], rows["acme"]["customerStatus"]) == ("ACME-501", "Alice", "new")
+    assert (rows["globex"]["key"], rows["globex"]["reporter"], rows["globex"]["screenshots"]) == ("GLX-501", "Bob", [up])
+    assert rows["globex"]["comments"][0]["text"] == "every user"
+    assert t.tp.get("/api/issues", headers=hdr()).json()[0]["reports"] == ["acme/ACME-501", "globex/GLX-501"]
+    page = t.tp.get("/").text
+    assert "Customer reports" in page and "Intake" in page and "api/reports?intake=true" in page
+
+
+def test_g6_a_verdict_verified_internally_reaches_every_linked_report(tri):
+    t = tri
+    _two_linked(t)
+    t.tp.post("/api/issues/IS-501/transition", json={"to": "fixed", "agent": {"rootCause": "secret cause", "fix": "f"}}, headers=AGENT)
+    rep = _sync(t)
+    assert rep["acme"]["pushed"] == [] and rep["globex"]["pushed"] == []
+    t.tp.post("/api/issues/IS-501/transition", json={"to": "verified", "note": "checked on build 510"}, headers=hdr("Priya"))
+    rep = _sync(t)
+    assert rep["acme"]["pushed"] == ["ACME-501→fixed"] and rep["globex"]["pushed"] == ["GLX-501→fixed"]
+    for c, h, k in ((t.a, t.ah(), "ACME-501"), (t.g, t.gh(), "GLX-501")):
+        d = c.get(f"/api/issues/{k}", headers=h).json()
+        assert d["status"] == "fixed" and d["history"][-1]["by"] == t.internal.PUSH_ACTOR and d["history"][-1]["note"].startswith("Fixed")
+        assert "secret cause" not in c.get(f"/api/issues/{k}", headers=h).text
+    rep = _sync(t)
+    assert rep["acme"]["pushed"] == [] and rep["globex"]["pushed"] == []
+    assert {r["customerStatus"] for r in t.tp.get("/api/issues/IS-501", headers=hdr()).json()["customerReports"]} == {"fixed"}
+    # a customer's own verify / close is recorded on their report only
+    t.a.post("/api/issues/ACME-501/transition", json={"to": "verified"}, headers=t.ah())
+    t.a.post("/api/issues/ACME-501/transition", json={"to": "closed"}, headers=t.ah())
+    assert _sync(t)["acme"]["customerMoves"] == 2
+    doc = t.tp.get("/api/issues/IS-501", headers=hdr()).json()
+    assert doc["status"] == "verified" and {r["board"]: r["customerStatus"] for r in doc["customerReports"]} == {"acme": "closed", "globex": "fixed"}
+
+
+def test_g6_a_customer_never_sees_duplicate_but_gets_the_twins_verdict(tri):
+    t = tri
+    twin = file_issue(t.tp)["key"]
+    _file(t.a, t.ah(), "Invoice is blank")
+    _sync(t)
+    k = t.tp.post("/api/reports/acme/ACME-501/promote", json={}, headers=AGENT).json()["key"]
+    t.tp.post(f"/api/issues/{k}/transition", json={"to": "duplicate", "agent": {"duplicateOf": twin}}, headers=AGENT)
+    t.tp.post(f"/api/issues/{k}/transition", json={"to": "verified"}, headers=hdr("Priya"))
+    assert _sync(t)["acme"]["pushed"] == [], "the twin is not verified yet"
+    _fix_and_verify(t, twin)
+    assert _sync(t)["acme"]["pushed"] == ["ACME-501→fixed"]
+    hist = t.a.get("/api/issues/ACME-501", headers=t.ah()).json()["history"]
+    assert "duplicate" not in [h["to"] for h in hist] and twin not in t.a.get("/api/issues/ACME-501", headers=t.ah()).text
+
+
+def test_g2_nothing_from_one_customer_reaches_another(tri):
+    t = tri
+    up = _shot(t.a, t.ah("Alice Acme"))
+    _file(t.a, t.ah("Alice Acme"), "Acme invoice export blank", description="acme-only steps", screenshots=[up])
+    t.a.post("/api/issues/ACME-501/comments", json={"text": "acme secret comment"}, headers=t.ah("Alice Acme"))
+    _file(t.g, t.gh(), "Blank invoice in August")
+    _sync(t)
+    t.tp.post("/api/reports/acme/ACME-501/promote", json={}, headers=AGENT)
+    t.tp.post("/api/reports/globex/GLX-501/attach", json={"to": "IS-501"}, headers=AGENT)
+    t.tp.post("/api/reports/acme/ACME-501/ask", json={"text": "Which acme billing code?"}, headers=AGENT)
+    _sync(t)
+    _fix_and_verify(t)
+    assert _sync(t)["globex"]["pushed"] == ["GLX-501→fixed"]
+    seen = " ".join(t.g.get(p, headers=t.gh()).text for p in ("/api/issues?full=true", "/api/issues", "/api/issues/GLX-501", "/api/stats"))
+    for leak in ("acme", "ACME", "Alice", up, "IS-501", "secret", "Acme invoice", "billing code", "Invoice is blank", "1 other", "2 customers"):
+        assert leak.lower() not in seen.lower(), leak
+    assert t.g.get("/api/stats", headers=t.gh()).json()["total"] == 1
+    assert [h["note"] for h in t.g.get("/api/issues/GLX-501", headers=t.gh()).json()["history"] if h["by"] == t.internal.PUSH_ACTOR] == [t.internal.CUSTOMER_NOTES["fixed"]]
+
+
+def test_g7_more_info_is_per_report(tri):
+    t = tri
+    _two_linked(t)
+    assert t.tp.post("/api/reports/acme/ACME-501/ask", json={"text": "Which month?"}, headers=hdr()).status_code == 403
+    assert t.tp.post("/api/reports/acme/ACME-501/ask", json={"text": " "}, headers=AGENT).status_code == 400
+    assert t.tp.post("/api/reports/acme/ACME-501/ask", json={"text": "Which month?"}, headers=AGENT).status_code == 200
+    rep = _sync(t)
+    assert rep["acme"]["pushed"] == ["ACME-501→more_info"] and rep["globex"]["pushed"] == []
+    a = t.a.get("/api/issues/ACME-501", headers=t.ah()).json()
+    assert a["status"] == "more_info" and a["history"][-1]["note"] == "Which month?"
+    assert t.g.get("/api/issues/GLX-501", headers=t.gh()).json()["status"] == "new"
+    assert t.tp.get("/api/issues/IS-501", headers=hdr()).json()["status"] == "new"
+    assert _sync(t)["acme"]["pushed"] == []
+    # the customer answers → the report is flagged "answered" for the agent; the issue does not move
+    t.a.post("/api/issues/ACME-501/transition", json={"to": "open", "note": "August"}, headers=t.ah())
+    assert _sync(t)["acme"]["customerMoves"] == 1
+    [r] = t.tp.get("/api/reports?intake=true", headers=hdr()).json()
+    assert (r["key"], r["flag"], r["customerStatus"], r["comments"][-1]["text"]) == ("ACME-501", "answered", "open", "August")
+    assert t.tp.get("/api/stats", headers=hdr()).json()["flagged"] == 1 and t.tp.get("/api/issues/IS-501", headers=hdr()).json()["status"] == "new"
+    t.tp.post("/api/reports/acme/ACME-501/attach", json={"to": "IS-501"}, headers=AGENT)
+    assert t.tp.get("/api/reports?intake=true", headers=hdr()).json() == []
+    assert _sync(t)["acme"]["pushed"] == []
+
+
+def test_g8_a_customer_reopen_after_a_verdict_flags_the_report_and_nothing_reopens_by_itself(tri):
+    t = tri
+    _two_linked(t)
+    _fix_and_verify(t)
+    _sync(t)
+    t.a.post("/api/issues/ACME-501/transition", json={"to": "open", "note": "still blank for me"}, headers=t.ah())
+    rep = _sync(t)
+    assert rep["acme"]["customerMoves"] == 1 and rep["acme"]["pushed"] == []
+    doc = t.tp.get("/api/issues/IS-501", headers=hdr()).json()
+    assert doc["status"] == "verified"
+    assert doc["comments"][-1]["text"] == "ACME-501 reopened by acme (Alice): still blank for me"
+    assert {r["board"]: r["flag"] for r in doc["customerReports"]} == {"acme": "reopened", "globex": ""}
+    assert [r["key"] for r in t.tp.get("/api/reports?intake=true", headers=hdr()).json()] == ["ACME-501"]
+    assert t.a.get("/api/issues/ACME-501", headers=t.ah()).json()["status"] == "open", "the verdict it reopened is not sent again"
+    assert t.g.get("/api/issues/GLX-501", headers=t.gh()).json()["status"] == "fixed"
+    assert _sync(t)["acme"]["pushed"] == []
+    assert t.tp.post("/api/issues/IS-501/transition", json={"to": "open", "note": "x"}, headers=AGENT).status_code == 409
+    # a different defect: detach, then promote as a new issue; its own verdict reaches the customer
+    assert t.tp.post("/api/reports/acme/ACME-501/detach", json={}, headers=hdr()).status_code == 403
+    r = t.tp.post("/api/reports/acme/ACME-501/detach", json={"text": "different month"}, headers=AGENT).json()
+    assert r["issue"] is None and r["flag"] == ""
+    assert t.tp.get("/api/issues/IS-501", headers=hdr()).json()["reports"] == ["globex/GLX-501"]
+    assert t.tp.post("/api/reports/acme/ACME-501/detach", json={}, headers=AGENT).status_code == 409
+    assert t.tp.post("/api/reports/acme/ACME-501/promote", json={}, headers=AGENT).json()["key"] == "IS-502"
+    _fix_and_verify(t, "IS-502")
+    assert _sync(t)["acme"]["pushed"] == ["ACME-501→fixed"]
+    assert t.tp.get("/api/reports/acme/ACME-501", headers=hdr()).json()["flag"] == ""
+
+
+def test_g8_a_human_reopen_and_new_verdict_reaches_the_reopened_report(tri):
+    t = tri
+    _two_linked(t)
+    _fix_and_verify(t)
+    _sync(t)
+    t.a.post("/api/issues/ACME-501/transition", json={"to": "open", "note": "still blank"}, headers=t.ah())
+    _sync(t)
+    t.tp.post("/api/issues/IS-501/transition", json={"to": "open", "note": "acme still sees it"}, headers=hdr("Priya"))
+    _fix_and_verify(t)
+    rep = _sync(t)
+    assert rep["acme"]["pushed"] == ["ACME-501→fixed"]
+    assert rep["globex"]["pushed"] == [], "globex already shows fixed"
+
+
+def test_g9_single_board_mirror_data_migrates_to_an_issue_with_one_attached_report(tri):
+    t = tri
+    up = _shot(t.a, t.ah())
+    f = _file(t.a, t.ah(), "Old mirrored report", screenshots=[up])
+    t.a.post("/api/issues/ACME-501/comments", json={"text": "seen before"}, headers=t.ah())
+    at = "2026-01-01T00:00:00.000Z"
+    with t.internal.tx() as con:
+        t.internal.put_issue(con, {"key": "IS-501", "num": 501, "title": f["title"], "description": "steps", "module": "api", "kind": "bug",
+                                   "severity": "medium", "persona": "", "build": "", "status": "open", "source": "customer", "sourceRef": "ACME-501",
+                                   "reporter": "Alice", "createdAt": at, "updatedAt": at, "screenshots": [up], "agent": {}, "comments": [],
+                                   "history": [{"at": at, "by": "sync", "from": "", "to": "new", "note": "Mirrored"}],
+                                   "sync": {"commentsSeen": 1, "historySeen": 1, "pushedAt": ""}})
+    t.internal.init_db()
+    t.internal.init_db()
+    doc = t.tp.get("/api/issues/IS-501", headers=hdr()).json()
+    assert doc["reports"] == ["acme/ACME-501"] and doc["status"] == "open"
+    [r] = doc["customerReports"]
+    assert (r["board"], r["key"], r["issue"], r["title"], r["reporter"], r["screenshots"]) == ("acme", "ACME-501", "IS-501", "Old mirrored report", "Alice", [up])
+    assert len(t.tp.get("/api/reports", headers=hdr()).json()) == 1
+    rep = _sync(t)["acme"]
+    assert rep["intake"] == [] and rep["comments"] == 0 and rep["pushed"] == []
+    assert t.tp.get("/api/reports/acme/ACME-501", headers=hdr()).json()["customerStatus"] == "new"
+
+
+def test_another_app_drops_a_report_into_intake_and_reads_its_outcome(tri):
+    t = tri
+    up = t.tp.post("/api/uploads", files={"file": ("s.png", io.BytesIO(PNG), "image/png")}, headers=AGENT).json()["id"]
+    body = {"board": "support", "key": "SUP-12", "title": "Export button greyed out", "description": "ticket text", "reporter": "Dana (acme)", "screenshots": [up, "nope.png"]}
+    assert t.tp.post("/api/reports", json=body, headers=hdr()).status_code == 403
+    r = t.tp.post("/api/reports", json=body, headers=AGENT)
+    assert r.status_code == 201, r.text
+    assert (r.json()["issue"], r.json()["screenshots"], r.json()["customerStatus"]) == (None, [up], "new")
+    assert t.tp.post("/api/reports", json=body, headers=AGENT).status_code == 409
+    assert t.tp.post("/api/reports", json={**body, "board": "acme"}, headers=AGENT).status_code == 409
+    assert t.tp.post("/api/reports", json={**body, "board": "Bad/Board"}, headers=AGENT).status_code == 422
+    assert t.tp.post("/api/reports", json={**body, "key": "SUP-13", "module": "nope"}, headers=AGENT).status_code == 400
+    assert [x["board"] for x in t.tp.get("/api/reports?intake=true", headers=hdr()).json()] == ["support"]
+    k = t.tp.post("/api/reports/support/SUP-12/promote", json={}, headers=AGENT).json()["key"]
+    assert t.tp.get("/api/reports/support/SUP-12", headers=hdr()).json()["release"] is None
+    _fix_and_verify(t, k)
+    rel = t.tp.get("/api/reports/support/SUP-12", headers=hdr()).json()["release"]
+    assert rel["status"] == "fixed" and rel["note"] == t.internal.CUSTOMER_NOTES["fixed"]
+    assert "support" not in _sync(t)
+
+
+def test_g10_a_customer_board_has_no_triage(tri):
+    t = tri
+    assert t.a.get("/api/reports", headers=t.ah()).status_code == 404
+    assert t.a.post("/api/reports/acme/ACME-501/promote", json={}, headers={**AGENT, "X-Issues-Token": "a-tok"}).status_code == 404
+    assert "intake" not in t.a.get("/api/stats", headers=t.ah()).json()
+    assert t.a.get("/api/meta", headers=t.ah()).json()["customer"] is True
 
 
 def test_sync_endpoint_needs_a_mirror_and_a_non_tester(boards):
     _, _, internal, tp = boards
     assert tp.post("/api/sync", headers=hdr()).status_code == 403
-    assert tp.post("/api/sync", headers=hdr("agent", "agent")).status_code == 404   # no FEEDBACK_SYNC_URL here
+    assert tp.post("/api/sync", headers=hdr("agent", "agent")).status_code == 404   # no FEEDBACK_BOARDS here
 
 
 def test_a_report_splits_into_independent_issues_linked_both_ways(client):

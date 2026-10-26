@@ -1,0 +1,32 @@
+# Ideas portal — one server for every org:
+#
+#   docker compose -f deploy/docker-compose.ideas.yml up -d --build
+#
+# {{slug}}-ideas — the portal view (customers, by org token) and the product view (the team).
+# Customers reach it, so the team token is required: without it anyone could act as product.
+# Put it behind your reverse proxy with TLS; the page uses relative URLs, so any prefix works.
+#
+# .env: IDEAS_TOKEN (team: product / agent / admin), IDEAS_ORGS (comma list),
+#       IDEAS_TOKEN_<ORG> for each org (IDEAS_TOKEN_ACME, IDEAS_TOKEN_GLOBEX …).
+services:
+  ideas:
+    build:
+      context: ..
+      dockerfile: ideas/Dockerfile
+    container_name: {{slug}}-ideas
+    restart: unless-stopped
+    env_file:
+      - .env                                   # carries the IDEAS_TOKEN_<ORG> lines
+    environment:
+      - IDEAS_TOKEN=${IDEAS_TOKEN:?set the team token}
+      - IDEAS_ORGS=${IDEAS_ORGS:?list the orgs}
+      - IDEAS_PREFIX=${IDEAS_PREFIX:-IDEA}
+      - IDEAS_SUBMISSION_PREFIX=${IDEAS_SUBMISSION_PREFIX:-IDR}
+      - IDEAS_BRAND=${IDEAS_BRAND:-{{project_name}} · Ideas}
+    volumes:
+      - {{slug}}_ideas_data:/data
+    expose:
+      - "3004"
+
+volumes:
+  {{slug}}_ideas_data:

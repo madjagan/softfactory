@@ -3,7 +3,7 @@
 
     python3 tools/factory.py get commands.verify      # one value, for shell use
     python3 tools/factory.py cmd verify               # run a manifest command, exit with its status
-    python3 tools/factory.py env                      # export lines for the issue tracker
+    python3 tools/factory.py env                      # export lines for the tracker, support desk and ideas portal
     python3 tools/factory.py check                    # every referenced doc exists, commands are set
 
 Reads PyYAML when installed; otherwise a small parser for the subset the template uses
@@ -161,6 +161,8 @@ def cmd(name: str) -> int:
 def env_lines() -> list[str]:
     m = manifest()
     iss = m.get("issues", {}) or {}
+    sup = m.get("support", {}) or {}
+    ide = m.get("ideas", {}) or {}
     proj = m.get("project", {}) or {}
     out = {
         "ISSUES_URL": iss.get("url", "http://127.0.0.1:3002"),
@@ -168,6 +170,21 @@ def env_lines() -> list[str]:
         "ISSUES_BRAND": iss.get("brand") or f"{proj.get('name', 'Project')} · issues",
         "ISSUES_MODULES": ",".join(iss.get("modules") or []),
         "ISSUES_PUSH_ACTOR": iss.get("push_actor") or proj.get("name", "Product team"),
+        "FEEDBACK_BOARDS": ",".join(f"{b['name']}={b['url']}" for b in iss.get("customer_boards") or []
+                                    if b.get("name") and b.get("url")),
+        "SUPPORT_URL": sup.get("url", "http://127.0.0.1:3003"),
+        "SUPPORT_PREFIX": sup.get("prefix", "SUP"),
+        "SUPPORT_BRAND": sup.get("brand") or f"{proj.get('name', 'Project')} · Support",
+        "SUPPORT_ORGS": ",".join(sup.get("orgs") or []),
+        "SUPPORT_WIDGET_SECRET_ENV": sup.get("widget_secret_env", "SUPPORT_WIDGET_SECRET"),
+        "SUPPORT_AUTO_CLOSE_DAYS": sup.get("auto_close_days", 7),
+        "SUPPORT_CATEGORIES": ",".join(sup.get("categories") or []),
+        "SUPPORT_TRACKER_URL": sup.get("tracker_url", ""),
+        "IDEAS_URL": ide.get("url", "http://127.0.0.1:3004"),
+        "IDEAS_PREFIX": ide.get("prefix", "IDEA"),
+        "IDEAS_SUBMISSION_PREFIX": ide.get("submission_prefix", "IDR"),
+        "IDEAS_BRAND": ide.get("brand") or f"{proj.get('name', 'Project')} · Ideas",
+        "IDEAS_ORGS": ",".join(ide.get("orgs") or sup.get("orgs") or []),
     }
     return [f"export {k}={shlex.quote(str(v))}" for k, v in out.items() if v]
 
@@ -181,6 +198,8 @@ def check() -> int:
     for key in ("name", "slug", "summary"):
         if not (m.get("project") or {}).get(key):
             print(f"project.{key} missing"); rc = 1
+    if (m.get("issues") or {}).get("customer_board"):
+        print("issues.customer_board is replaced by issues.customer_boards: [{name, url, prefix}]"); rc = 1
     for key in ("verify", "test_unit", "deploy"):
         if not (m.get("commands") or {}).get(key):
             print(f"commands.{key} missing"); rc = 1

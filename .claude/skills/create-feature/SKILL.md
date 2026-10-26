@@ -2,7 +2,7 @@
 name: create-feature
 description: "Add a new feature the disciplined way: dated requirement in the PRD → acceptance tests that define done (RED first) → conflict/risk review + dated implementation-plan entry → implement → verify (tests, full gate, real flow) → mark complete (dated) + issues-log entry. Also runs in AMENDMENT mode for a change to an existing requirement. Use whenever the user wants to add, build, create or change a capability (not fix a bug — that's /fix-issue). Triggers on: add a feature, new feature, build, implement, add capability, add a module, feature request, spec out and build, change the rule, amend the requirement."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "2.0"
   category: "engineering"
 ---
@@ -36,7 +36,7 @@ rules, whatever the product declares).
    sibling feature and copy its shape.
 6. **Prove it, don't assume.** Drive the real flow, hit the live API, run the suites.
 7. **Minimal, coherent scope.** Build exactly the requirement; list deferrals as non-goals.
-8. **Money, statutory and security numbers are business decisions.** If the feature
+8. **Money, legal and security numbers are business decisions.** If the feature
    changes a computed amount, a legal rate or an access rule, confirm with the user before
    Phase 4.
 

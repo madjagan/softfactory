@@ -1,8 +1,8 @@
 ---
 name: setup-project
-description: "Stand up the software factory in a repo from a product summary: write factory.yaml (the manifest every other skill reads), the docs ledger (PRD skeleton with the first dated requirement sections, implementation plan with test gates, issues log, feature list, human test plan, testing companion, user-guide index), CLAUDE.md house rules, the test gates and deploy path, and the issue tracker. Idempotent — re-run to fill gaps. Triggers on: set up the factory, setup project, bootstrap this repo, new project, initialise the ledger, start a product from a summary, factory init."
+description: "Stand up the Solo Product Toolkit in a repo from a product summary: write factory.yaml (the manifest every other skill reads), the docs ledger (PRD skeleton with the first dated requirement sections, implementation plan with test gates, issues log, feature list, human test plan, testing companion, user-guide index), CLAUDE.md house rules, the test gates and deploy path, and the issue tracker. Idempotent — re-run to fill gaps. Triggers on: set up the factory, setup project, bootstrap this repo, new project, initialise the ledger, start a product from a summary, factory init."
 metadata:
-  author: "softfactory"
+  author: "Solo Product Toolkit"
   version: "1.0"
   category: "engineering"
 ---
@@ -22,7 +22,7 @@ required, what is built, and which command proves it. Code is optional at this s
 the ledger is not.
 
 The factory's own files (skills, agents, hooks, tracker, tools, templates) come from the
-softfactory repo via `install.sh`. This skill does not copy them; it assumes they are in
+Solo Product Toolkit repo via `install.sh`. This skill does not copy them; it assumes they are in
 place (`ls .claude/skills tools/factory.py templates/`) and stops with instructions if not.
 
 ---
